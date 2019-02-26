@@ -242,7 +242,7 @@ class Human36M:
 
             img_name = gt['img_path']
             # 'S1_Directions_1.54343424_000001.jpg'
-            act_name = img_name.split('.')[0].split('_')[1]
+            act_name = img_name.split('/')[-1].split('.')[0].split('_')[1]
             act_name = 'Photo' if act_name == 'TakingPhoto' else act_name
             act_name = 'WalkDog' if act_name == 'WalkingDog' else act_name
             action_idx = self.action_name.index(act_name)
