@@ -18,6 +18,7 @@ class Config:
     vis_dir = osp.join(output_dir, 'vis')
     log_dir = osp.join(output_dir, 'log')
     result_dir = osp.join(output_dir, 'result')
+    tbx_dir = osp.join(output_dir, 'tensorboard')
  
     ## model setting
     resnet_type = 50 # 18, 34, 50, 101, 152
@@ -31,8 +32,8 @@ class Config:
     pixel_std = (0.229, 0.224, 0.225)
 
     ## training config
-    lr_dec_epoch = [15, 17]
-    end_epoch = 20
+    lr_dec_epoch = [20, 90]
+    end_epoch = 300  # 20
     lr = 1e-3
     lr_dec_factor = 0.1
     optimizer = 'adam'

@@ -2,6 +2,7 @@ import argparse
 from config import cfg
 from base import Trainer
 import torch.backends.cudnn as cudnn
+import tensorboardX
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -35,6 +36,7 @@ def main():
     trainer._make_model()
 
     # train
+    tbx = tensorboardX.SummaryWriter(cfg.tbx_dir)
     for epoch in range(trainer.start_epoch, cfg.end_epoch):
         trainer.scheduler.step()
         trainer.tot_timer.tic()
@@ -74,6 +76,7 @@ def main():
                 '%s: %.4f' % ('loss_loc', JointLocationLoss.detach()),
                 ]
             trainer.logger.info(' '.join(screen))
+            tbx.add_scalars('Train', {'loss_loc': JointLocationLoss.detach()}, epoch)
 
             trainer.tot_timer.toc()
             trainer.tot_timer.tic()
