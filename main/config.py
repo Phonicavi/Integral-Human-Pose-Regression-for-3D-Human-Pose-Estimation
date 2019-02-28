@@ -32,13 +32,13 @@ class Config:
     pixel_std = (0.229, 0.224, 0.225)
 
     ## training config
-    lr_dec_epoch = [20, 90]
-    end_epoch = 300  # 20
+    lr_dec_epoch = [15, 17]
+    end_epoch = 20
     lr = 1e-3
     lr_dec_factor = 0.1
     optimizer = 'adam'
     weight_decay = 1e-5
-    batch_size = 32
+    batch_size = 8
 
     ## testing config
     test_batch_size = 32

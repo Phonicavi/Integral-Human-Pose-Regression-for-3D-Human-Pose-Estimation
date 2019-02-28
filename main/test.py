@@ -69,16 +69,16 @@ def main():
                     flipped_coord_out[:, pair[0], :], flipped_coord_out[:, pair[1], :] = flipped_coord_out[:, pair[1], :].clone(), flipped_coord_out[:, pair[0], :].clone()
                 coord_out = (coord_out + flipped_coord_out)/2.
 
-            vis = False
+            vis = True
             if vis:
                 filename = str(itr)
                 tmpimg = input_img[0].cpu().numpy()
-                tmpimg = tmpimg * cfg.pixel_std.reshape(3,1,1) + cfg.pixel_mean.reshape(3,1,1)
+                tmpimg = tmpimg * np.array(cfg.pixel_std).reshape(3,1,1) + np.array(cfg.pixel_mean).reshape(3,1,1)
                 tmpimg = tmpimg.astype(np.uint8)
                 tmpimg = tmpimg[::-1, :, :]
                 tmpimg = np.transpose(tmpimg,(1,2,0)).copy()
                 tmpkps = np.zeros((3,tester.joint_num))
-                tmpkps[:2,:] = coord_out[0,:,:2].transpose(1,0) / cfg.output_shape[0] * cfg.input_shape[0]
+                tmpkps[:2,:] = coord_out.cpu()[0,:,:2].transpose(1,0) / cfg.output_shape[0] * cfg.input_shape[0]
                 tmpkps[2,:] = 1
                 tmpimg = vis_keypoints(tmpimg, tmpkps, tester.skeleton)
                 cv2.imwrite(osp.join(cfg.vis_dir, filename + '_output.jpg'), tmpimg)

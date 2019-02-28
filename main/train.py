@@ -4,6 +4,8 @@ from base import Trainer
 import torch.backends.cudnn as cudnn
 import tensorboardX
 
+from nets.loss import soft_argmax
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, dest='gpu_ids')
@@ -57,6 +59,16 @@ def main():
             # forward
             heatmap_out = trainer.model(input_img)
 
+            # visualize
+            # joint_num = joint_img.shape[1]
+            # coord_out = soft_argmax(heatmap_out, joint_num)
+            #
+            # smpl_gt = joint_img[0]
+            # smpl_out = coord_out[0]
+            #
+            # print('gt:', type(smpl_gt), smpl_gt.shape, smpl_gt)
+            # print('hm:', type(smpl_out), smpl_out.shape, smpl_out)
+
             # backward
             JointLocationLoss = trainer.JointLocationLoss(heatmap_out, joint_img, joint_vis, joints_have_depth)
 
@@ -76,7 +88,7 @@ def main():
                 '%s: %.4f' % ('loss_loc', JointLocationLoss.detach()),
                 ]
             trainer.logger.info(' '.join(screen))
-            tbx.add_scalars('Train', {'loss_loc': JointLocationLoss.detach()}, epoch)
+            tbx.add_scalars('Train', {'loss_loc': JointLocationLoss.detach()}, epoch * trainer.itr_per_epoch + itr)
 
             trainer.tot_timer.toc()
             trainer.tot_timer.tic()

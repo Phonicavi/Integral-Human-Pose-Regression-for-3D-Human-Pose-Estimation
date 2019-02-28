@@ -152,15 +152,13 @@ class Human36M:
             joint_world, R, T, f, c, img_widths, img_heights = self.load_h36m_annot_file(folder)
             img_num = np.shape(joint_world)[0]
 
-            for n in range(0, img_num, self.subsampling):
+            for n in range(0, img_num):
                 
-                # img_path = osp.join(folder_dir, self._H36ImageName(folder, n))
-                img_path = osp.join(self.data_dir, 'images/', self._H36ImageName(folder, n))
+                frame = n * self.subsampling
+                # img_path = osp.join(folder_dir, self._H36ImageName(folder, frame))
+                img_path = osp.join(self.data_dir, 'images/', self._H36ImageName(folder, frame))
                 joint_img, joint_cam, joint_vis, center_cam, bbox = process_world_coordinate(joint_world[n], self.root_idx, self.joint_num, R, T, f, c)
-                
-                #img_width = img_widths[n]
-                #img_height = img_heights[n]
-                
+
                 data.append({
                     'img_path': img_path,
                     'bbox': bbox, 
