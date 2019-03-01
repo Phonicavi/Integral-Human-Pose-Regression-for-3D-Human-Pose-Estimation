@@ -36,12 +36,15 @@ def rigid_align(A, B):
     A2 = np.transpose(np.dot(R, np.transpose(A))) + t
     return A2
 
-def process_world_coordinate(joint_world, root_idx, joint_num, R, T, f, c):
+def process_world_coordinate(joint_cam, root_idx, joint_num, R, T, f, c):
 
     # project world coordinates to image space
-    joint_cam = np.zeros((joint_num, 3))
-    for i in range(joint_num):
-        joint_cam[i] = np.dot(R, joint_world[i] - T)
+    # todo:  @qiufeng.2019-03-01 - NOTICE that loaded joint_world is already processed joint_cam
+    ### Transformation: world => cam has been done!!
+    # joint_cam = np.zeros((joint_num, 3))
+    # for i in range(joint_num):
+    #     joint_cam[i] = np.dot(R, joint_world[i] - T)
+
     center_cam = joint_cam[root_idx]
 
     # Subtract center depth
@@ -49,7 +52,7 @@ def process_world_coordinate(joint_world, root_idx, joint_num, R, T, f, c):
     joint_img[:, 0], joint_img[:, 1], joint_img[:, 2] = cam2pixel(joint_cam, f, c)
     joint_img[:, 2] = joint_img[:, 2] - center_cam[2]
     joint_vis = np.ones((joint_num,1))
-    
+
     ## bbox3d
     # build 3D bounding box centered on center_cam, sized with bbox_3d_shape
     bbox3d_lt = center_cam - np.array([cfg.bbox_3d_shape[2] / 2, cfg.bbox_3d_shape[1] / 2, 0])

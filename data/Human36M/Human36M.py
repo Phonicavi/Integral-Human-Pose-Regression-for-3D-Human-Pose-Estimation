@@ -8,7 +8,9 @@ import cv2
 import random
 import pickle
 import h5py
+import cv2
 from utils.vis import vis_keypoints, vis_3d_skeleton
+
 
 class Human36M:
     def __init__(self, data_split):
@@ -22,14 +24,19 @@ class Human36M:
         self.joint_num = 18
         self.joints_name = ('Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso', 'Neck', 'Nose', 'Head', 'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist', 'Thorax')
         self.flip_pairs = ( (1, 4), (2, 5), (3, 6), (14, 11), (15, 12), (16, 13) )
-        self.skeleton = ( (0, 7), (7, 8), (8, 9), (9, 10), (8, 11), (11, 12), (12, 13), (8, 14), (14, 15), (15, 16), (0, 1), (1, 2), (2, 3), (0, 4), (4, 5), (5, 6) )
-        self.lr_skeleton = ( ((8,11),(8,14)), ((11,12),(14,15)), ((12,13),(15,16)), ((0,1),(0,4)), ((1,2),(4,5)), ((2,3),(5,6)) )
+        self.skeleton = ( (0, 7), (7, 8), (8, 9), (9, 10),
+                          (8, 11), (11, 12), (12, 13),
+                          (8, 14), (14, 15), (15, 16),
+                          (0, 1), (1, 2), (2, 3),
+                          (0, 4), (4, 5), (5, 6) )
+        self.lr_skeleton = ( ((8,11),(8,14)), ((11,12),(14,15)), ((12,13),(15,16)),
+                             ((0,1),(0,4)), ((1,2),(4,5)), ((2,3),(5,6)) )
         self.eval_joint = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
         self.joints_have_depth = True
 
-        self.action_idx = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
-        self.subaction_idx = (1, 2)
-        self.camera_idx = (1, 2, 3, 4)
+        # self.action_idx = (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
+        # self.subaction_idx = (1, 2)
+        # self.camera_idx = (1, 2, 3, 4)
         self.act_mapping = {
             1: ['Directions_1', 'Directions', 'Discussion_1', 'Discussion', 'Eating_2', 'Eating', 'Greeting_1', 'Greeting', 'Phoning_1', 'Phoning', 'Posing_1', 'Posing', 'Purchases_1', 'Purchases', 'Sitting_1', 'Sitting_2', 'SittingDown_2', 'SittingDown', 'Smoking_1', 'Smoking', 'TakingPhoto_1', 'TakingPhoto', 'Waiting_1', 'Waiting', 'WalkTogether_1', 'WalkTogether', 'Walking_1', 'Walking', 'WalkingDog_1', 'WalkingDog'],
             5: ['Directions_1', 'Directions_2', 'Discussion_2', 'Discussion_3', 'Eating_1', 'Eating', 'Greeting_1', 'Greeting_2', 'Phoning_1', 'Phoning', 'Photo_2', 'Photo', 'Posing_1', 'Posing', 'Purchases_1', 'Purchases', 'Sitting_1', 'Sitting', 'SittingDown_1', 'SittingDown', 'Smoking_1', 'Smoking', 'Waiting_1', 'Waiting_2', 'WalkDog_1', 'WalkDog', 'WalkTogether_1', 'WalkTogether', 'Walking_1', 'Walking'],
@@ -67,16 +74,9 @@ class Human36M:
     def load_h36m_annot_file(self, folder):
 
         subject_id = int(folder.split('_')[0][1:])
-
-        #act_name = folder.split('.')[0].split('_')[1]
         cam_id = self.rcam_dict[folder.split('.')[1]]
-
-        #act_name = 'Photo' if act_name == 'TakingPhoto' else act_name
-        #act_name = 'WalkDog' if act_name == 'WalkingDog' else act_name
-        #action_idx = self.action_name.index(act_name)
-
         s_ix, e_ix = self.integral_pk[folder]
-        joint_world = self.sample_h5['S'].value[s_ix: e_ix]
+        joint_cam = self.sample_h5['S'].value[s_ix: e_ix + 1]
 
         cm = self.camera_h5['subject%d' % subject_id]['camera%d' % cam_id]
         R = cm['R'].value
@@ -85,47 +85,37 @@ class Human36M:
         c = np.reshape(cm['c'].value,(-1))
         img_heights, img_widths = 1000, 1000
 
-        #data = sio.loadmat(annot_file)
-        #joint_world = data['pose3d_world'] # 3D world coordinates of keypoints
-        # R = data['R'] # extrinsic
-        # T = np.reshape(data['T'],(3)) # extrinsic
-        # f = np.reshape(data['f'],(-1)) # focal legnth
-        # c = np.reshape(data['c'],(-1)) # principal points
-        # img_heights = np.reshape(data['img_height'],(-1))
-        # img_widths = np.reshape(data['img_width'],(-1))
-
         # add thorax
-        thorax = (joint_world[:, self.lshoulder_idx, :] + joint_world[:, self.rshoulder_idx, :]) * 0.5
+        thorax = (joint_cam[:, self.lshoulder_idx, :] + joint_cam[:, self.rshoulder_idx, :]) * 0.5
         thorax = thorax.reshape((thorax.shape[0], 1, thorax.shape[1]))
-        joint_world = np.concatenate((joint_world, thorax), axis=1)
+        joint_cam = np.concatenate((joint_cam, thorax), axis=1)
 
-        return joint_world, R, T, f, c, img_widths, img_heights
+        return joint_cam, R, T, f, c, img_widths, img_heights
 
     def _H36FolderName(self, subject_id, act_id, subact_id, camera_id):
-        # "S1_Directions_1.54138969"
         return "S%d_%s.%s" % \
                (subject_id, self.act_mapping[subject_id][(act_id - 2) * 2 + (subact_id - 1)], self.cam_dict[camera_id])
-        # return "s_%02d_act_%02d_subact_%02d_ca_%02d" % \
-        #       (subject_id, act_id, subact_id, camera_id)
 
     def _H36ImageName(self, folder_name, frame_id):
         return "%s_%06d.jpg" % (folder_name, frame_id + 1)
 
     def _AllHuman36Folders(self, subject_list):
         folders = []
-        image_list_index = {}
         for i in subject_list:
-            for j in self.action_idx:
-                for m in self.subaction_idx:
-                    for n in self.camera_idx:
-                        folders.append(self._H36FolderName(i, j, m, n))
+            folders += [fd for fd in self.integral_pk if fd.startswith('S%d_' % i)]
+            # for j in self.action_idx:
+            #     for m in self.subaction_idx:
+            #         for n in self.camera_idx:
+            #             folders.append(self._H36FolderName(i, j, m, n))
         return folders
 
     def _sample_dataset(self, data_split):
         if data_split == 'train':
             folders = self._AllHuman36Folders([1, 5, 6, 7, 8])
+            print('data-split: \'%s\' loaded with folders: %d' % (data_split, len(folders)))
         elif data_split == 'test':
             folders = self._AllHuman36Folders([9, 11])
+            print('data-split: \'%s\' loaded with folders: %d' % (data_split, len(folders)))
         else:
             print("Unknown subset")
             assert 0
@@ -137,27 +127,23 @@ class Human36M:
         folders = self._sample_dataset(self.data_split)
         data = []
         for folder in folders:
-            
-            # if folder == 's_11_act_02_subact_02_ca_01':
-            #    continue
 
             fd_head = folder.split('.')[0]
             if fd_head in ['S9_Greeting.', 'S9_SittingDown_1.', 'S9_Waiting_1.'] or \
                     folder == "S11_Directions.54138969":
                 continue
 
-            # folder_dir = osp.join(self.data_dir, folder)
-            
             # load ground truth
-            joint_world, R, T, f, c, img_widths, img_heights = self.load_h36m_annot_file(folder)
-            img_num = np.shape(joint_world)[0]
+            joint_cams, R, T, f, c, img_widths, img_heights = self.load_h36m_annot_file(folder)
+            img_num = np.shape(joint_cams)[0]
+            # print('\'%s\' folder with %d images' % (folder, img_num))
 
             for n in range(0, img_num):
                 
                 frame = n * self.subsampling
-                # img_path = osp.join(folder_dir, self._H36ImageName(folder, frame))
                 img_path = osp.join(self.data_dir, 'images/', self._H36ImageName(folder, frame))
-                joint_img, joint_cam, joint_vis, center_cam, bbox = process_world_coordinate(joint_world[n], self.root_idx, self.joint_num, R, T, f, c)
+
+                joint_img, joint_cam, joint_vis, center_cam, bbox = process_world_coordinate(joint_cams[n], self.root_idx, self.joint_num, R, T, f, c)
 
                 data.append({
                     'img_path': img_path,
@@ -186,8 +172,8 @@ class Human36M:
         
         p1_error = np.zeros((sample_num, joint_num, 3)) # PA MPJPE (protocol #1 metric)
         p2_error = np.zeros((sample_num, joint_num, 3)) # MPJPE (protocol #2 metroc)
-        p1_error_action = [ [] for _ in range(len(self.action_idx)) ] # PA MPJPE for each action
-        p2_error_action = [ [] for _ in range(len(self.action_idx)) ] # MPJPE error for each action
+        p1_error_action = [ [] for _ in range(len(self.action_name)) ] # PA MPJPE for each action
+        p2_error_action = [ [] for _ in range(len(self.action_name)) ] # MPJPE error for each action
         pred_to_save = []
         for n in range(sample_num):
             

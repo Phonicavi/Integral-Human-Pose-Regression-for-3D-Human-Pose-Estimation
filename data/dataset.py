@@ -41,7 +41,7 @@ class DatasetLoader(Dataset):
             self.do_augment = False
 
     def __getitem__(self, index):
-        
+
         if self.multiple_db:
             db_idx = index // max([len(db) for db in self.db])
 
@@ -53,10 +53,10 @@ class DatasetLoader(Dataset):
 
             ref_joints_name = self.joints_name[0]
             joints_name = self.joints_name[db_idx]
-            
+
             item_idx = index % max([len(db) for db in self.db]) % len(self.db[db_idx])
             data = copy.deepcopy(self.db[db_idx][item_idx])
-            
+
         else:
             joint_num = self.joint_num
             skeleton = self.skeleton
@@ -74,6 +74,7 @@ class DatasetLoader(Dataset):
         cvimg = cv2.imread(data['img_path'], cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
         if not isinstance(cvimg, np.ndarray):
             raise IOError("Fail to read %s" % data['img_path'])
+        cvimg = cvimg[:1000, :1000, :] # abort margin 2-pixel width & keep 1000 * 1000
         img_height, img_width, img_channels = cvimg.shape
 
         # 2. get augmentation params
@@ -100,13 +101,13 @@ class DatasetLoader(Dataset):
             joint_img[i, 2] /= (cfg.bbox_3d_shape[0]/2. * scale) # expect depth lies in -bbox_3d_shape[0]/2 ~ bbox_3d_shape[0]/2 -> -1.0 ~ 1.0
             joint_img[i, 2] = (joint_img[i,2] + 1.0)/2. # 0~1 normalize
             joint_vis[i] *= (
-                            (joint_img[i,0] >= 0) & \
-                            (joint_img[i,0] < cfg.input_shape[1]) & \
-                            (joint_img[i,1] >= 0) & \
-                            (joint_img[i,1] < cfg.input_shape[0]) & \
-                            (joint_img[i,2] >= 0) & \
-                            (joint_img[i,2] < 1)
-                            )
+                    (joint_img[i,0] >= 0) & \
+                    (joint_img[i,0] < cfg.input_shape[1]) & \
+                    (joint_img[i,1] >= 0) & \
+                    (joint_img[i,1] < cfg.input_shape[0]) & \
+                    (joint_img[i,2] >= 0) & \
+                    (joint_img[i,2] < 1)
+            )
 
         vis = False
         if vis:
@@ -117,7 +118,7 @@ class DatasetLoader(Dataset):
             tmpkps[2,:] = joint_vis[:,0]
             tmpimg = vis_keypoints(tmpimg, tmpkps, skeleton)
             cv2.imwrite(osp.join(cfg.vis_dir, filename + '_gt.jpg'), tmpimg)
-        
+
         vis = False
         if vis:
             vis_3d_skeleton(joint_img, joint_vis, skeleton, filename)
@@ -126,12 +127,12 @@ class DatasetLoader(Dataset):
         joint_img[:, 0] = joint_img[:, 0] / cfg.input_shape[1] * cfg.output_shape[1]
         joint_img[:, 1] = joint_img[:, 1] / cfg.input_shape[0] * cfg.output_shape[0]
         joint_img[:, 2] = joint_img[:, 2] * cfg.depth_dim
-        
+
         # change joint coord, vis to reference dataset. 0th db is reference dataset
         if self.multiple_db:
-            joint_img = transform_joint_to_other_db(joint_img, joints_name, ref_joints_name)        
-            joint_vis = transform_joint_to_other_db(joint_vis, joints_name, ref_joints_name)        
-        
+            joint_img = transform_joint_to_other_db(joint_img, joints_name, ref_joints_name)
+            joint_vis = transform_joint_to_other_db(joint_vis, joints_name, ref_joints_name)
+
         if self.is_train:
             img_patch = self.transform(img_patch)
             joint_img = joint_img.astype(np.float32)

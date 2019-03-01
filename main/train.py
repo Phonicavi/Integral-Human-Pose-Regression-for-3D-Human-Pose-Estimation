@@ -59,16 +59,6 @@ def main():
             # forward
             heatmap_out = trainer.model(input_img)
 
-            # visualize
-            # joint_num = joint_img.shape[1]
-            # coord_out = soft_argmax(heatmap_out, joint_num)
-            #
-            # smpl_gt = joint_img[0]
-            # smpl_out = coord_out[0]
-            #
-            # print('gt:', type(smpl_gt), smpl_gt.shape, smpl_gt)
-            # print('hm:', type(smpl_out), smpl_out.shape, smpl_out)
-
             # backward
             JointLocationLoss = trainer.JointLocationLoss(heatmap_out, joint_img, joint_vis, joints_have_depth)
 
