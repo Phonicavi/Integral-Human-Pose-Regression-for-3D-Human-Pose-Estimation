@@ -143,6 +143,12 @@ class Human36M:
             for n in range(0, img_num):
                 
                 frame = n * self.subsampling
+                if self.subsampling == 5:
+                    pass
+                elif self.subsampling == 60:
+                    if n % 12:
+                        continue
+
                 img_path = osp.join(self.data_dir, 'images/', self._H36ImageName(folder, frame))
 
                 joint_img, joint_cam, joint_vis, center_cam, bbox = process_world_coordinate(joint_cams[n], self.root_idx, self.joint_num, R, T, f, c)
