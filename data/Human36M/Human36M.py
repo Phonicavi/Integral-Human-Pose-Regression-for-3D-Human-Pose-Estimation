@@ -22,7 +22,9 @@ class Human36M:
         self.sample_list = []
         self.subsampling = self.get_subsampling_ratio(data_split)
         self.joint_num = 18
-        self.joints_name = ('Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso', 'Neck', 'Nose', 'Head', 'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist', 'Thorax')
+        self.joints_name = ('Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso',
+                            'Neck', 'Nose', 'Head',
+                            'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist', 'Thorax')
         self.flip_pairs = ( (1, 4), (2, 5), (3, 6), (14, 11), (15, 12), (16, 13) )
         self.skeleton = ( (0, 7), (7, 8), (8, 9), (9, 10),
                           (8, 11), (11, 12), (12, 13),
