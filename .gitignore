@@ -120,7 +120,6 @@ dmypy.json
 
 # dataset & experiment
 data/Human36M/data/
-data/MPII/annotations/
-data/MPII/images/
+data/MPII/data/
 output*
 

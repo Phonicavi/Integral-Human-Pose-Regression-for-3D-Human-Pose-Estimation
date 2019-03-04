@@ -6,7 +6,7 @@ import numpy as np
 class Config:
     
     ## dataset
-    trainset = ['Human36M'] #, 'MPII'] # Human36M, MPII. !!Note that 0th db is reference db!!
+    trainset = ['Human36M', 'MPII'] # Human36M, MPII. !!Note that 0th db is reference db!!
     testset = 'Human36M' # Human36M, MPII
 
     ## directory

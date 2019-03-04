@@ -9,9 +9,9 @@ class MPII:
 
     def __init__(self, data_split):
         self.data_split = data_split
-        self.img_dir = osp.join('..', 'data', 'MPII')
-        self.train_annot_path = osp.join('..', 'data', 'MPII', 'annotations', 'train.json')
-        self.test_annot_path = osp.join('..', 'data', 'MPII', 'annotations', 'test.json')
+        self.img_dir = osp.join('..', 'data', 'MPII', 'data', 'images')
+        self.train_annot_path = osp.join('..', 'data', 'MPII', 'data', 'annotations', 'train.json')
+        self.test_annot_path = osp.join('..', 'data', 'MPII', 'data', 'annotations', 'test.json')
         self.joint_num = 16
         self.joints_name = ('R_Ankle', 'R_Knee', 'R_Hip', 'L_Hip', 'L_Knee', 'L_Ankle', 'Pelvis', 'Thorax', 'Neck', 'Head', 'R_Wrist', 'R_Elbow', 'R_Shoulder', 'L_Shoulder', 'L_Elbow', 'L_Wrist')
         self.flip_pairs = ( (0, 5), (1, 4), (2, 3), (10, 15), (11, 14), (12, 13) )
