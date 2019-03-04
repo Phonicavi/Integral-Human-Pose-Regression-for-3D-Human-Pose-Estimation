@@ -24,7 +24,7 @@ class Human36M:
         self.joint_num = 17
         self.joints_name = ('Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso',
                             'Neck', 'Nose', 'Head',
-                            'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist', 'Thorax')
+                            'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist', )#'Thorax')
         self.flip_pairs = ( (1, 4), (2, 5), (3, 6), (14, 11), (15, 12), (16, 13) )
         self.skeleton = ( (0, 7), (7, 8), (8, 9), (9, 10),
                           (8, 11), (11, 12), (12, 13),
@@ -306,6 +306,8 @@ class Human36M:
         f_eval_result.write(p2_action_eval_summary)
         f_eval_result.write('\n')
         f_eval_result.close()
+
+        return p1_error, p2_error
 
 
 if __name__ == '__main__':

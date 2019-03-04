@@ -154,5 +154,5 @@ class Tester(Base):
         self.model = model
 
     def _evaluate(self, preds, result_save_path):
-        self.testset.evaluate(preds, result_save_path)
+        return self.testset.evaluate(preds, result_save_path)
 

@@ -34,7 +34,7 @@ def parse_args():
     return args
 
 
-def embedded_test(test_epoch):
+def embedded_test(tensorx, test_epoch):
     tester = Tester(cfg, test_epoch)
     tester._make_batch_generator()
     tester._make_model()
@@ -85,7 +85,10 @@ def embedded_test(test_epoch):
 
     # evaluate
     preds = np.concatenate(preds, axis=0)
-    tester._evaluate(preds, cfg.result_dir)
+    os.makedirs(osp.join(cfg.result_dir, '%d' % test_epoch), exist_ok=True)
+    p1_error, p2_error = \
+        tester._evaluate(preds, osp.join(cfg.result_dir, '%d' % test_epoch))
+    tensorx.add_scalars('Test', {'p1_error(PA.MPJPE)': p1_error, 'p2_error(MPJPE)': p2_error,}, test_epoch)
 
 
 def main():
@@ -153,6 +156,9 @@ def main():
             'optimizer': trainer.optimizer.state_dict(),
             'scheduler': trainer.scheduler.state_dict(),
         }, epoch)
+
+        if not (epoch % 20) or epoch + 1 >= cfg.end_epoch:
+            embedded_test(tbx, epoch)
 
 
 if __name__ == "__main__":

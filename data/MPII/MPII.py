@@ -91,5 +91,6 @@ class MPII:
 
     def evaluate(self, preds, result_dir):
         print('MPII evaluation not supported')
+        return None
 
 

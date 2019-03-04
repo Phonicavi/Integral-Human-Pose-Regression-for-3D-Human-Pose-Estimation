@@ -13,7 +13,7 @@ class Config:
     cur_dir = osp.dirname(os.path.abspath(__file__))
     root_dir = osp.join(cur_dir, '..')
     data_dir = osp.join(root_dir, 'data')
-    output_dir = osp.join(root_dir, 'output')
+    output_dir = osp.join(root_dir, 'output2')
     model_dir = osp.join(output_dir, 'model_dump')
     vis_dir = osp.join(output_dir, 'vis')
     log_dir = osp.join(output_dir, 'log')
@@ -32,8 +32,8 @@ class Config:
     pixel_std = (0.229, 0.224, 0.225)
 
     ## training config
-    lr_dec_epoch = [15, 17]
-    end_epoch = 20
+    lr_dec_epoch = [295, 298]
+    end_epoch = 300
     lr = 1e-3
     lr_dec_factor = 0.1
     optimizer = 'adam'
@@ -42,7 +42,7 @@ class Config:
 
     ## testing config
     test_batch_size = 32
-    flip_test = True
+    flip_test = False
 
     ## others
     num_thread = 24 #8
