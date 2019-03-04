@@ -38,10 +38,10 @@ class Config:
     lr_dec_factor = 0.1
     optimizer = 'adam'
     weight_decay = 1e-5
-    batch_size = 16
+    batch_size = 8
 
     ## testing config
-    test_batch_size = 32
+    test_batch_size = 4
     flip_test = False
 
     ## others
