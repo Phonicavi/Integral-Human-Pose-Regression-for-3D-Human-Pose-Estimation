@@ -104,6 +104,22 @@ class Trainer(Base):
         optimizer, scheduler = self.get_optimizer(self.cfg.optimizer, model)
         if self.cfg.continue_train:
             start_epoch, model, optimizer, scheduler = self.load_model(model, optimizer, scheduler)
+            # todo: modify optimizer.lr, scheduler.milestones, scheduler.gamma
+            if self.cfg.optimizer == 'adam':
+                init_lr = self.cfg.lr
+                milestones = self.cfg.lr_dec_epoch
+                gamma = self.cfg.lr_dec_factor
+                scheduler.milestones = milestones
+                scheduler.gamma = gamma
+                if start_epoch < milestones[0]:
+                    self.optimizer.lr = init_lr
+                else:
+                    for item in milestones:
+                        if start_epoch >= item:
+                            init_lr *= gamma
+                        else:
+                            break
+                    self.optimizer.lr = init_lr
         else:
             start_epoch = 0
         model.train()
