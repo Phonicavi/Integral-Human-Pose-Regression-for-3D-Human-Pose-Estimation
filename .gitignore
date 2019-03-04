@@ -122,5 +122,5 @@ dmypy.json
 data/Human36M/data/
 data/MPII/annotations/
 data/MPII/images/
-output
+output*
 

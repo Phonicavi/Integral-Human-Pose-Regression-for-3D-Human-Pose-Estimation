@@ -36,7 +36,7 @@ def rigid_align(A, B):
     A2 = np.transpose(np.dot(R, np.transpose(A))) + t
     return A2
 
-def process_world_coordinate(joint_cam, root_idx, joint_num, R, T, f, c):
+def process_world_coordinate(joint_cam, root_idx, joint_num, f, c):  # (joint_cam, root_idx, joint_num, R, T, f, c)
 
     # project world coordinates to image space
     # todo:  @qiufeng.2019-03-01 - NOTICE that loaded joint_world is already processed joint_cam

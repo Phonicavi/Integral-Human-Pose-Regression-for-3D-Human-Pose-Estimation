@@ -21,7 +21,7 @@ class Config:
     tbx_dir = osp.join(output_dir, 'tensorboard')
  
     ## model setting
-    resnet_type = 50 # 18, 34, 50, 101, 152
+    resnet_type = 152 # 18, 34, 50, 101, 152
     
     ## input, output
     input_shape = (256, 256) 
@@ -38,14 +38,14 @@ class Config:
     lr_dec_factor = 0.1
     optimizer = 'adam'
     weight_decay = 1e-5
-    batch_size = 8
+    batch_size = 16
 
     ## testing config
     test_batch_size = 32
     flip_test = True
 
     ## others
-    num_thread = 20 #8
+    num_thread = 24 #8
     gpu_ids = '0'
     num_gpus = 1
     continue_train = False

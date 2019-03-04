@@ -21,7 +21,7 @@ class Human36M:
         self.sample_h5 = None
         self.sample_list = []
         self.subsampling = self.get_subsampling_ratio(data_split)
-        self.joint_num = 18
+        self.joint_num = 17
         self.joints_name = ('Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso',
                             'Neck', 'Nose', 'Head',
                             'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist', 'Thorax')
@@ -64,12 +64,12 @@ class Human36M:
             self.sample_h5 = h5py.File(osp.join(self.data_dir, 'annot/train.h5'), 'r')
             with open(osp.join(self.data_dir, 'annot/train_images.txt'), 'r') as item_list:
                 self.sample_list = item_list.read().splitlines()
-            return 5
+            return 60
         elif data_split == 'test':
             self.sample_h5 = h5py.File(osp.join(self.data_dir, 'annot/valid.h5'), 'r')
             with open(osp.join(self.data_dir, 'annot/valid_images.txt'), 'r') as item_list:
                 self.sample_list = item_list.read().splitlines()
-            return 5
+            return 60
         else:
             assert 0, print('Unknown subset')
 
@@ -81,18 +81,20 @@ class Human36M:
         joint_cam = self.sample_h5['S'].value[s_ix: e_ix + 1]
 
         cm = self.camera_h5['subject%d' % subject_id]['camera%d' % cam_id]
-        R = cm['R'].value
-        T = np.reshape(cm['T'].value,(3))
+        # R = cm['R'].value
+        # T = np.reshape(cm['T'].value,(3))
         f = np.reshape(cm['f'].value,(-1))
         c = np.reshape(cm['c'].value,(-1))
         img_heights, img_widths = 1000, 1000
 
         # add thorax
-        thorax = (joint_cam[:, self.lshoulder_idx, :] + joint_cam[:, self.rshoulder_idx, :]) * 0.5
-        thorax = thorax.reshape((thorax.shape[0], 1, thorax.shape[1]))
-        joint_cam = np.concatenate((joint_cam, thorax), axis=1)
+        # thorax = (joint_cam[:, self.lshoulder_idx, :] + joint_cam[:, self.rshoulder_idx, :]) * 0.5
+        # thorax = thorax.reshape((thorax.shape[0], 1, thorax.shape[1]))
+        # joint_cam = np.concatenate((joint_cam, thorax), axis=1)
+        # print(joint_cam.shape, joint_cam)
 
-        return joint_cam, R, T, f, c, img_widths, img_heights
+        # return joint_cam, R, T, f, c, img_widths, img_heights
+        return joint_cam, f, c, img_widths, img_heights
 
     def _H36FolderName(self, subject_id, act_id, subact_id, camera_id):
         return "S%d_%s.%s" % \
@@ -136,22 +138,23 @@ class Human36M:
                 continue
 
             # load ground truth
-            joint_cams, R, T, f, c, img_widths, img_heights = self.load_h36m_annot_file(folder)
+            joint_cams, f, c, img_widths, img_heights = self.load_h36m_annot_file(folder)
             img_num = np.shape(joint_cams)[0]
-            # print('\'%s\' folder with %d images' % (folder, img_num))
+            # print('\'%s\' folder with %d images loaded' % (folder, img_num))
 
             for n in range(0, img_num):
                 
-                frame = n * self.subsampling
+                frame = n * 5
+                assert not self.subsampling % 5, 'invalid subsampling settings'
                 if self.subsampling == 5:
                     pass
-                elif self.subsampling == 60:
-                    if n % 12:
+                else:
+                    if n % (self.subsampling // 5):
                         continue
 
                 img_path = osp.join(self.data_dir, 'images/', self._H36ImageName(folder, frame))
 
-                joint_img, joint_cam, joint_vis, center_cam, bbox = process_world_coordinate(joint_cams[n], self.root_idx, self.joint_num, R, T, f, c)
+                joint_img, joint_cam, joint_vis, center_cam, bbox = process_world_coordinate(joint_cams[n], self.root_idx, self.joint_num, f, c)
 
                 data.append({
                     'img_path': img_path,
@@ -233,12 +236,10 @@ class Human36M:
             p2_error[n] = np.power(pre_3d_kpt - gt_3d_kpt,2)  # MPJPE (protocol #2)
 
             img_name = gt['img_path']
-            # 'S1_Directions_1.54343424_000001.jpg'
             act_name = img_name.split('/')[-1].split('.')[0].split('_')[1]
             act_name = 'Photo' if act_name == 'TakingPhoto' else act_name
             act_name = 'WalkDog' if act_name == 'WalkingDog' else act_name
             action_idx = self.action_name.index(act_name)
-            # action_idx = int(img_name[img_name.find('act')+4:img_name.find('act')+6]) - 2
             p1_error_action[action_idx].append(p1_error[n].copy())
             p2_error_action[action_idx].append(p2_error[n].copy())
 
