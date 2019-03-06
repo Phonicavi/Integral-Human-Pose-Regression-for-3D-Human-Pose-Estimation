@@ -9,6 +9,7 @@ import numpy as np
 
 from config import cfg
 from base import Trainer, Tester
+from base import BaselineTrainer, BaselineTester
 from torch.nn.parallel.scatter_gather import gather
 from nets.loss import soft_argmax
 from utils.pose_utils import flip
@@ -20,6 +21,7 @@ def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, dest='gpu_ids')
     parser.add_argument('--continue', dest='continue_train', action='store_true')
+    parser.add_argument('--baseline', dest='baseline', action='store_true')
     args = parser.parse_args()
 
     if not args.gpu_ids:
@@ -35,7 +37,7 @@ def parse_args():
 
 
 def embedded_test(tensorx, test_epoch):
-    tester = Tester(cfg, test_epoch)
+    tester = BaselineTester(cfg, test_epoch)
     tester._make_batch_generator()
     tester._make_model()
     preds = []
@@ -95,6 +97,8 @@ def main():
     # argument parse and create log
     args = parse_args()
     cfg.set_args(args.gpu_ids, args.continue_train)
+    if args.baseline:
+        return
     cudnn.fastest = True
     cudnn.benchmark = True
     cudnn.deterministic = False
@@ -161,5 +165,78 @@ def main():
             embedded_test(tbx, epoch)
 
 
+def run_baseline():
+    # argument parse and create log
+    args = parse_args()
+    cfg.set_args(args.gpu_ids, args.continue_train)
+    if not args.baseline:
+        return
+    cudnn.fastest = True
+    cudnn.benchmark = True
+    cudnn.deterministic = False
+    cudnn.enabled = True
+
+    trainer = BaselineTrainer(cfg)
+    trainer._make_batch_generator()
+    trainer._make_model()
+
+    # train
+    tbx = tensorboardX.SummaryWriter(cfg.tbx_dir)
+    for epoch in range(trainer.start_epoch, cfg.end_epoch):
+        trainer.scheduler.step()
+        trainer.tot_timer.tic()
+        trainer.read_timer.tic()
+
+        for itr, (input_img, joint_img, joint_vis, joints_have_depth) in enumerate(trainer.batch_generator):
+            trainer.read_timer.toc()
+            trainer.gpu_timer.tic()
+
+            trainer.optimizer.zero_grad()
+
+            input_img = input_img.cuda()
+            joint_img = joint_img.cuda()
+            joint_vis = joint_vis.cuda()
+            joints_have_depth = joints_have_depth.cuda()
+
+            # forward
+            heatmap_out = trainer.model(input_img)
+
+            # backward
+            JointLocationLoss = trainer.JointLocationLoss(heatmap_out, joint_img, joint_vis, joints_have_depth)
+
+            loss = JointLocationLoss
+
+            loss.backward()
+            trainer.optimizer.step()
+
+            trainer.gpu_timer.toc()
+
+            screen = [
+                'Epoch %d/%d itr %d/%d:' % (epoch, cfg.end_epoch, itr, trainer.itr_per_epoch),
+                'lr: %g' % (trainer.scheduler.get_lr()[0]),
+                'speed: %.2f(%.2fs r%.2f)s/itr' % (
+                    trainer.tot_timer.average_time, trainer.gpu_timer.average_time, trainer.read_timer.average_time),
+                '%.2fh/epoch' % (trainer.tot_timer.average_time / 3600. * trainer.itr_per_epoch),
+                '%s: %.4f' % ('loss_loc', JointLocationLoss.detach()),
+            ]
+            trainer.logger.info(' '.join(screen))
+            tbx.add_scalars('Train', {'loss_loc': JointLocationLoss.detach()}, epoch * trainer.itr_per_epoch + itr)
+
+            trainer.tot_timer.toc()
+            trainer.tot_timer.tic()
+            trainer.read_timer.tic()
+
+        trainer.save_model({
+            'epoch': epoch,
+            'network': trainer.model.state_dict(),
+            'optimizer': trainer.optimizer.state_dict(),
+            'scheduler': trainer.scheduler.state_dict(),
+        }, epoch)
+
+        if not (epoch % 20) or epoch + 1 >= cfg.end_epoch:
+            embedded_test(tbx, epoch)
+
+
 if __name__ == "__main__":
     main()
+    run_baseline()
