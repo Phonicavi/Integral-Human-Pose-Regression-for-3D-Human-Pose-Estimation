@@ -112,14 +112,14 @@ class Trainer(Base):
                 scheduler.milestones = milestones
                 scheduler.gamma = gamma
                 if start_epoch < milestones[0]:
-                    self.optimizer.lr = init_lr
+                    optimizer.lr = init_lr
                 else:
                     for item in milestones:
                         if start_epoch >= item:
                             init_lr *= gamma
                         else:
                             break
-                    self.optimizer.lr = init_lr
+                    optimizer.lr = init_lr
         else:
             start_epoch = 0
         model.train()
