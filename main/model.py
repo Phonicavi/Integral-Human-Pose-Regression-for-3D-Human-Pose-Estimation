@@ -124,7 +124,7 @@ class RegressModel(nn.Module):
                     padding=1,
                     output_padding=0,
                     bias=False))
-            layers.append(nn.BatchNorm2d(self.outplanes))
+            layers.append(nn.BatchNorm2d(self.midplanes))
             layers.append(nn.ReLU(inplace=True))
             self.inplanes = self.midplanes
         return nn.Sequential(*layers)
@@ -171,11 +171,11 @@ class ResPoseNet(nn.Module):
         self.head = head
 
     def forward(self, x):
-        print('step-01', x.shape)
+        # print('step-01', x.shape)
         x = self.backbone(x)
-        print('step-02', x.shape)
+        # print('step-02', x.shape)
         x = self.head(x)
-        print('step-03', x.shape)
+        # print('step-03', x.shape)
         return x
 
 def get_pose_net(cfg, is_train, joint_num):
