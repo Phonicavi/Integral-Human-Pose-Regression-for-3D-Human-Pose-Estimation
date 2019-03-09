@@ -45,7 +45,7 @@ class Config:
     flip_test = False
 
     ## others
-    num_thread = 24 #8
+    num_thread = 16 #8
     gpu_ids = '0'
     num_gpus = 1
     continue_train = False
