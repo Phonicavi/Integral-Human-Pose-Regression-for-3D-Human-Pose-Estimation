@@ -63,7 +63,7 @@ class RegressNet(nn.Module):
     def __init__(self, joint_num, p_dropout=0.5):
         self.inplanes = 2048
         self.midplanes = 1024
-        self.outplanes = joint_num * cfg.depth_dim
+        self.outplanes = 3 * joint_num
         self.p_dropout = p_dropout
 
         super(RegressNet, self).__init__()

@@ -67,7 +67,7 @@ class JointMSELoss(nn.Module):
         heatmaps_gt = target.reshape((batch_size, num_joints, -1)).split(1, 1)
         loss = 0
 
-        print('[JointMSE-forward] heatmaps_pred:', heatmaps_pred.shape, 'heatmaps_gt', heatmaps_gt.shape)
+        # print('[JointMSE-forward] heatmaps_pred:', heatmaps_pred.shape, 'heatmaps_gt', heatmaps_gt.shape)
         print('[JointMSE-forward][after-squz] heatmaps_pred:', heatmaps_pred[0].squeeze().shape, 'heatmaps_gt', heatmaps_gt[0].squeeze().shape)
 
         for idx in range(num_joints):
