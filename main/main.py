@@ -225,6 +225,7 @@ def run_baseline():
     cfg.set_args(args.gpu_ids, args.continue_train, args.output_dir)
     if not args.baseline:
         return
+    cfg.trainset = ['Human36M']
     cudnn.fastest = True
     cudnn.benchmark = True
     cudnn.deterministic = False
