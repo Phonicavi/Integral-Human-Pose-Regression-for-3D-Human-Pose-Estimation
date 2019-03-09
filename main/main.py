@@ -160,7 +160,7 @@ def main():
             'scheduler': trainer.scheduler.state_dict(),
         }, epoch)
 
-        if not (epoch % 20) or epoch + 1 >= cfg.end_epoch:
+        if not (epoch % 2000) or epoch + 1 >= cfg.end_epoch:
             embedded_test(tbx, epoch)
 
 def run_baseline():
@@ -197,7 +197,7 @@ def run_baseline():
             joints_have_depth = joints_have_depth.cuda()
 
             # forward
-            print('img_input:', input_img.shape, 'joint_img', joint_img.shape)
+            #print('img_input:', input_img.shape, 'joint_img', joint_img.shape)
             heatmap_out = trainer.model(input_img)
 
             # backward
@@ -237,7 +237,7 @@ def run_baseline():
             'scheduler': trainer.scheduler.state_dict(),
         }, epoch)
 
-        if not (epoch % 20) or epoch + 1 >= cfg.end_epoch:
+        if not (epoch % 2000) or epoch + 1 >= cfg.end_epoch:
             embedded_test(tbx, epoch)
 
 

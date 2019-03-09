@@ -38,8 +38,11 @@ class HeadNet(nn.Module):
         return nn.Sequential(*layers)
 
     def forward(self, x):
+        #print('[Head][Before deconv]', x.shape)
         x = self.deconv_layers(x)
+        #print('[Head][After deconv]', x.shape)
         x = self.final_layer(x)
+        #print('[Head][After final]', x.shape)
 
         return x
 
@@ -62,8 +65,11 @@ class ResPoseNet(nn.Module):
         self.head = head
 
     def forward(self, x):
+        #print('[Before backbone]', x.shape)
         x = self.backbone(x)
+        #print('[After backbone]', x.shape)
         x = self.head(x)
+        #print('[After head]', x.shape)
         return x
 
 def get_pose_net(cfg, is_train, joint_num):
