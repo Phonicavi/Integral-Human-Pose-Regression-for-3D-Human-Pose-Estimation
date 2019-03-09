@@ -104,39 +104,44 @@ def embedded_test_baseline(tensorx, test_epoch):
             input_img = input_img.cuda()
 
             # forward
-            heatmap_out = tester.model(input_img)
-            if cfg.num_gpus > 1:
-                heatmap_out = gather(heatmap_out, 0)
-            coord_out = soft_argmax(heatmap_out, tester.joint_num)
+            coords_out = tester.model(input_img)
+            batch_size = input_img.size(0)
+            num_joints = input_img.size(1)
+            coord_out = coords_out.reshape((batch_size, num_joints, -1)).split(1, 1)
 
-            if cfg.flip_test:
-                flipped_input_img = flip(input_img, dims=3)
-                flipped_heatmap_out = tester.model(flipped_input_img)
-                if cfg.num_gpus > 1:
-                    flipped_heatmap_out = gather(flipped_heatmap_out, 0)
-                flipped_coord_out = soft_argmax(flipped_heatmap_out, tester.joint_num)
-                flipped_coord_out[:, :, 0] = cfg.output_shape[1] - flipped_coord_out[:, :, 0] - 1
-                for pair in tester.flip_pairs:
-                    flipped_coord_out[:, pair[0], :], flipped_coord_out[:, pair[1], :] = flipped_coord_out[:, pair[1],
-                                                                                         :].clone(), flipped_coord_out[
-                                                                                                     :, pair[0],
-                                                                                                     :].clone()
-                coord_out = (coord_out + flipped_coord_out) / 2.
+            # heatmap_out = tester.model(input_img)
+            # if cfg.num_gpus > 1:
+            #     heatmap_out = gather(heatmap_out, 0)
+            # coord_out = soft_argmax(heatmap_out, tester.joint_num)
 
-            vis = True
-            if vis:
-                filename = str(itr)
-                tmpimg = input_img[0].cpu().numpy()
-                tmpimg = tmpimg * np.array(cfg.pixel_std).reshape(3, 1, 1) + np.array(cfg.pixel_mean).reshape(3, 1, 1)
-                tmpimg = tmpimg.astype(np.uint8)
-                tmpimg = tmpimg[::-1, :, :]
-                tmpimg = np.transpose(tmpimg, (1, 2, 0)).copy()
-                tmpkps = np.zeros((3, tester.joint_num))
-                tmpkps[:2, :] = coord_out.cpu()[0, :, :2].transpose(1, 0) / cfg.output_shape[0] * cfg.input_shape[0]
-                tmpkps[2, :] = 1
-                tmpimg = vis_keypoints(tmpimg, tmpkps, tester.skeleton)
-                os.makedirs(osp.join(cfg.vis_dir, '%d' % test_epoch), exist_ok=True)
-                cv2.imwrite(osp.join(cfg.vis_dir, ('%d/' % test_epoch) + filename + '_output.jpg'), tmpimg)
+            # if cfg.flip_test:
+            #     flipped_input_img = flip(input_img, dims=3)
+            #     flipped_heatmap_out = tester.model(flipped_input_img)
+            #     if cfg.num_gpus > 1:
+            #         flipped_heatmap_out = gather(flipped_heatmap_out, 0)
+            #     flipped_coord_out = soft_argmax(flipped_heatmap_out, tester.joint_num)
+            #     flipped_coord_out[:, :, 0] = cfg.output_shape[1] - flipped_coord_out[:, :, 0] - 1
+            #     for pair in tester.flip_pairs:
+            #         flipped_coord_out[:, pair[0], :], flipped_coord_out[:, pair[1], :] = flipped_coord_out[:, pair[1],
+            #                                                                              :].clone(), flipped_coord_out[
+            #                                                                                          :, pair[0],
+            #                                                                                          :].clone()
+            #     coord_out = (coord_out + flipped_coord_out) / 2.
+
+            # vis = True
+            # if vis:
+            #     filename = str(itr)
+            #     tmpimg = input_img[0].cpu().numpy()
+            #     tmpimg = tmpimg * np.array(cfg.pixel_std).reshape(3, 1, 1) + np.array(cfg.pixel_mean).reshape(3, 1, 1)
+            #     tmpimg = tmpimg.astype(np.uint8)
+            #     tmpimg = tmpimg[::-1, :, :]
+            #     tmpimg = np.transpose(tmpimg, (1, 2, 0)).copy()
+            #     tmpkps = np.zeros((3, tester.joint_num))
+            #     tmpkps[:2, :] = coord_out.cpu()[0, :, :2].transpose(1, 0) / cfg.output_shape[0] * cfg.input_shape[0]
+            #     tmpkps[2, :] = 1
+            #     tmpimg = vis_keypoints(tmpimg, tmpkps, tester.skeleton)
+            #     os.makedirs(osp.join(cfg.vis_dir, '%d' % test_epoch), exist_ok=True)
+            #     cv2.imwrite(osp.join(cfg.vis_dir, ('%d/' % test_epoch) + filename + '_output.jpg'), tmpimg)
 
             coord_out = coord_out.cpu().numpy()
             preds.append(coord_out)
@@ -291,7 +296,7 @@ def run_baseline():
             'scheduler': trainer.scheduler.state_dict(),
         }, epoch)
 
-        if not (epoch % 2000) or epoch + 1 >= cfg.end_epoch:
+        if not (epoch % 20) or epoch + 1 >= cfg.end_epoch:
             embedded_test_baseline(tbx, epoch)
 
 
