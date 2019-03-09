@@ -81,6 +81,8 @@ class RegressNet(nn.Module):
         print('[1a-before pooling]', x.shape)
         x = self.pooling(x)
         print('[1b-after pooling]', x.shape)
+        x = x.squeeze()
+        print('[1c-after squeeze]', x.shape)
         x = self.w1(x)
         print('[2a-after w1]', x.shape)
         x = self.batch_norm1(x)

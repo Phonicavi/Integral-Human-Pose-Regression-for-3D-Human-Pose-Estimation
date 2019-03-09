@@ -60,15 +60,15 @@ class JointMSELoss(nn.Module):
         self.use_target_weight = True
 
     def forward(self, output, target, target_weight):
-        #print('[JointMSELoss]: heatmap_out', output.shape, 'target', target.shape, 'target_weight', target_weight.shape)
+        print('[JointMSELoss]: heatmap_out', output.shape, 'target', target.shape, 'target_weight', target_weight.shape)
         batch_size = target.size(0)
         num_joints = target.size(1)
         heatmaps_pred = output.reshape((batch_size, num_joints, -1)).split(1, 1)
         heatmaps_gt = target.reshape((batch_size, num_joints, -1)).split(1, 1)
         loss = 0
 
-        #print('[JointMSE-forward] heatmaps_pred:', heatmaps_pred.shape, 'heatmaps_gt', heatmaps_gt.shape)
-        #print('[JointMSE-forward][after-squz] heatmaps_pred:', heatmaps_pred[0].squeeze().shape, 'heatmaps_gt', heatmaps_gt[0].squeeze().shape)
+        print('[JointMSE-forward] heatmaps_pred:', heatmaps_pred.shape, 'heatmaps_gt', heatmaps_gt.shape)
+        print('[JointMSE-forward][after-squz] heatmaps_pred:', heatmaps_pred[0].squeeze().shape, 'heatmaps_gt', heatmaps_gt[0].squeeze().shape)
 
         for idx in range(num_joints):
             heatmap_pred = heatmaps_pred[idx].squeeze()
