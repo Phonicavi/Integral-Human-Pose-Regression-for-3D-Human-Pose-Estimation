@@ -104,15 +104,18 @@ def embedded_test_baseline(tensorx, test_epoch):
             input_img = input_img.cuda()
 
             # forward
-            coords_out = tester.model(input_img)
-            batch_size = input_img.size(0)
-            num_joints = input_img.size(1)
-            coord_out = coords_out.reshape((batch_size, num_joints, -1)).split(1, 1)
-
             # heatmap_out = tester.model(input_img)
             # if cfg.num_gpus > 1:
             #     heatmap_out = gather(heatmap_out, 0)
             # coord_out = soft_argmax(heatmap_out, tester.joint_num)
+
+            coords_out = tester.model(input_img)
+            if cfg.num_gpus > 1:
+                coords_out = gather(coords_out, 0)
+            batch_size = input_img.size(0)
+            num_joints = input_img.size(1)
+            coord_out = coords_out.reshape((batch_size, num_joints, -1)).split(1, 1)
+
 
             # if cfg.flip_test:
             #     flipped_input_img = flip(input_img, dims=3)
