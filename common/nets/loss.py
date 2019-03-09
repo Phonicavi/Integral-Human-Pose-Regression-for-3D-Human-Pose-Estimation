@@ -38,7 +38,7 @@ class JointLocationLoss(nn.Module):
         super(JointLocationLoss, self).__init__()
 
     def forward(self, heatmap_out, gt_coord, gt_vis, gt_have_depth):
-        print('[JointLocationLoss]: heatmap_out', heatmap_out.shape)
+        print('[JointLocationLoss]: heatmap_out', heatmap_out.shape, 'gt_coord', gt_coord.shape, 'gt_vis', gt_vis.shape)
         
         joint_num = gt_coord.shape[1]
         coord_out = soft_argmax(heatmap_out, joint_num)
@@ -60,7 +60,7 @@ class JointMSELoss(nn.Module):
         self.use_target_weight = True
 
     def forward(self, output, target, target_weight):
-        print('[JointLocationLoss]: heatmap_out', output.shape)
+        print('[JointMSELoss]: heatmap_out', output.shape, 'target', target.shape, 'target_weight', target_weight.shape)
         batch_size = output.size(0)
         num_joints = output.size(1)
         heatmaps_pred = output.reshape((batch_size, num_joints, -1)).split(1, 1)
