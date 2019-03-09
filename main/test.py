@@ -16,12 +16,15 @@ import torch.backends.cudnn as cudnn
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, dest='gpu_ids')
+    parser.add_argument('--output', type=str, dest='output_dir', default='')
     parser.add_argument('--test_epoch', type=str, dest='test_epoch')
     args = parser.parse_args()
 
     # test gpus
     if not args.gpu_ids:
         args.gpu_ids = str(np.argmin(mem_info()))
+    if args.output_dir == '':
+        args.output_dir = None
 
     if '-' in args.gpu_ids:
         gpus = args.gpu_ids.split('-')
@@ -35,7 +38,7 @@ def parse_args():
 def main():
 
     args = parse_args()
-    cfg.set_args(args.gpu_ids)
+    cfg.set_args(args.gpu_ids, continue_train=False, output_dir=args.output_dir)
     cudnn.fastest = True
     cudnn.benchmark = True
     cudnn.deterministic = False

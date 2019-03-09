@@ -50,10 +50,11 @@ class Config:
     num_gpus = 1
     continue_train = False
 
-    def set_args(self, gpu_ids, continue_train=False):
+    def set_args(self, gpu_ids, continue_train=False, output_dir=None):
         self.gpu_ids = gpu_ids
         self.num_gpus = len(self.gpu_ids.split(','))
         self.continue_train = continue_train
+        self.output_dir = output_dir if output_dir is not None else self.output_dir
         os.environ["CUDA_VISIBLE_DEVICES"] = self.gpu_ids
         print('>>> Using GPU: {}'.format(self.gpu_ids))
 

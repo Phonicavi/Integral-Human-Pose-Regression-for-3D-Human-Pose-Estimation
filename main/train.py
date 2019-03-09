@@ -9,11 +9,14 @@ from nets.loss import soft_argmax
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, dest='gpu_ids')
+    parser.add_argument('--output', type=str, dest='output_dir', default='')
     parser.add_argument('--continue', dest='continue_train', action='store_true')
     args = parser.parse_args()
 
     if not args.gpu_ids:
         args.gpu_ids = str(np.argmin(mem_info()))
+    if args.output_dir == '':
+        args.output_dir = None
 
     if '-' in args.gpu_ids:
         gpus = args.gpu_ids.split('-')
@@ -27,7 +30,7 @@ def main():
     
     # argument parse and create log
     args = parse_args()
-    cfg.set_args(args.gpu_ids, args.continue_train)
+    cfg.set_args(args.gpu_ids, args.continue_train, args.output_dir)
     cudnn.fastest = True
     cudnn.benchmark = True
     cudnn.deterministic = False
@@ -57,6 +60,7 @@ def main():
 
 
             # forward
+            print('input_img', input_img.shape)
             heatmap_out = trainer.model(input_img)
 
             # backward

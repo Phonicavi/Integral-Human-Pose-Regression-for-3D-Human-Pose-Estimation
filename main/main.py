@@ -9,7 +9,6 @@ import numpy as np
 
 from config import cfg
 from base import Trainer, Tester
-from base import BaselineTrainer, BaselineTester
 from torch.nn.parallel.scatter_gather import gather
 from nets.loss import soft_argmax
 from utils.pose_utils import flip
@@ -20,12 +19,15 @@ from tqdm import tqdm
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, dest='gpu_ids')
+    parser.add_argument('--output', type=str, dest='output_dir', default='')
     parser.add_argument('--continue', dest='continue_train', action='store_true')
     parser.add_argument('--baseline', dest='baseline', action='store_true')
     args = parser.parse_args()
 
     if not args.gpu_ids:
         args.gpu_ids = str(np.argmin(mem_info()))
+    if args.output_dir == '':
+        args.output_dir = None
 
     if '-' in args.gpu_ids:
         gpus = args.gpu_ids.split('-')
@@ -92,66 +94,10 @@ def embedded_test(tensorx, test_epoch):
         tester._evaluate(preds, osp.join(cfg.result_dir, '%d' % test_epoch))
     tensorx.add_scalars('Test', {'p1_error(PA.MPJPE)': p1_error, 'p2_error(MPJPE)': p2_error,}, test_epoch)
 
-def embedded_test_baseline(tensorx, test_epoch):
-    tester = Tester(cfg, test_epoch)
-    tester._make_batch_generator()
-    tester._make_model()
-    preds = []
-
-    with torch.no_grad():
-        for itr, input_img in enumerate(tqdm(tester.batch_generator)):
-
-            input_img = input_img.cuda()
-
-            # forward
-            heatmap_out = tester.model(input_img)
-            if cfg.num_gpus > 1:
-                heatmap_out = gather(heatmap_out, 0)
-            coord_out = soft_argmax(heatmap_out, tester.joint_num)
-
-            if cfg.flip_test:
-                flipped_input_img = flip(input_img, dims=3)
-                flipped_heatmap_out = tester.model(flipped_input_img)
-                if cfg.num_gpus > 1:
-                    flipped_heatmap_out = gather(flipped_heatmap_out, 0)
-                flipped_coord_out = soft_argmax(flipped_heatmap_out, tester.joint_num)
-                flipped_coord_out[:, :, 0] = cfg.output_shape[1] - flipped_coord_out[:, :, 0] - 1
-                for pair in tester.flip_pairs:
-                    flipped_coord_out[:, pair[0], :], flipped_coord_out[:, pair[1], :] = flipped_coord_out[:, pair[1],
-                                                                                         :].clone(), flipped_coord_out[
-                                                                                                     :, pair[0],
-                                                                                                     :].clone()
-                coord_out = (coord_out + flipped_coord_out) / 2.
-
-            vis = True
-            if vis:
-                filename = str(itr)
-                tmpimg = input_img[0].cpu().numpy()
-                tmpimg = tmpimg * np.array(cfg.pixel_std).reshape(3, 1, 1) + np.array(cfg.pixel_mean).reshape(3, 1, 1)
-                tmpimg = tmpimg.astype(np.uint8)
-                tmpimg = tmpimg[::-1, :, :]
-                tmpimg = np.transpose(tmpimg, (1, 2, 0)).copy()
-                tmpkps = np.zeros((3, tester.joint_num))
-                tmpkps[:2, :] = coord_out.cpu()[0, :, :2].transpose(1, 0) / cfg.output_shape[0] * cfg.input_shape[0]
-                tmpkps[2, :] = 1
-                tmpimg = vis_keypoints(tmpimg, tmpkps, tester.skeleton)
-                os.makedirs(osp.join(cfg.vis_dir, '%d' % test_epoch), exist_ok=True)
-                cv2.imwrite(osp.join(cfg.vis_dir, ('%d/' % test_epoch) + filename + '_output.jpg'), tmpimg)
-
-            coord_out = coord_out.cpu().numpy()
-            preds.append(coord_out)
-
-    # evaluate
-    preds = np.concatenate(preds, axis=0)
-    os.makedirs(osp.join(cfg.result_dir, '%d' % test_epoch), exist_ok=True)
-    p1_error, p2_error = \
-        tester._evaluate(preds, osp.join(cfg.result_dir, '%d' % test_epoch))
-    tensorx.add_scalars('Test', {'p1_error(PA.MPJPE)': p1_error, 'p2_error(MPJPE)': p2_error,}, test_epoch)
-
 def main():
     # argument parse and create log
     args = parse_args()
-    cfg.set_args(args.gpu_ids, args.continue_train)
+    cfg.set_args(args.gpu_ids, args.continue_train, args.output_dir)
     if args.baseline:
         return
     cudnn.fastest = True
@@ -222,7 +168,7 @@ def main():
 def run_baseline():
     # argument parse and create log
     args = parse_args()
-    cfg.set_args(args.gpu_ids, args.continue_train)
+    cfg.set_args(args.gpu_ids, args.continue_train, args.output_dir)
     if not args.baseline:
         return
     cudnn.fastest = True
@@ -230,7 +176,7 @@ def run_baseline():
     cudnn.deterministic = False
     cudnn.enabled = True
 
-    trainer = BaselineTrainer(cfg)
+    trainer = Trainer(cfg)
     trainer._make_batch_generator()
     trainer._make_model()
 
@@ -253,7 +199,9 @@ def run_baseline():
             joints_have_depth = joints_have_depth.cuda()
 
             # forward
+            print('img_input', input_img.shape)
             heatmap_out = trainer.model(input_img)
+            print('heatmap_out', heatmap_out.shape)
 
             # backward
             JointLocationLoss = trainer.JointLocationLoss(heatmap_out, joint_img, joint_vis, joints_have_depth)
@@ -288,9 +236,9 @@ def run_baseline():
         }, epoch)
 
         if not (epoch % 20) or epoch + 1 >= cfg.end_epoch:
-            embedded_test_baseline(tbx, epoch)
+            embedded_test(tbx, epoch)
 
 
 if __name__ == "__main__":
     main()
-    # run_baseline()
+    run_baseline()

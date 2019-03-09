@@ -69,7 +69,7 @@ class Human36M:
             self.sample_h5 = h5py.File(osp.join(self.data_dir, 'annot/valid.h5'), 'r')
             with open(osp.join(self.data_dir, 'annot/valid_images.txt'), 'r') as item_list:
                 self.sample_list = item_list.read().splitlines()
-            return 60
+            return 5
         else:
             assert 0, print('Unknown subset')
 
@@ -91,9 +91,7 @@ class Human36M:
         # thorax = (joint_cam[:, self.lshoulder_idx, :] + joint_cam[:, self.rshoulder_idx, :]) * 0.5
         # thorax = thorax.reshape((thorax.shape[0], 1, thorax.shape[1]))
         # joint_cam = np.concatenate((joint_cam, thorax), axis=1)
-        # print(joint_cam.shape, joint_cam)
 
-        # return joint_cam, R, T, f, c, img_widths, img_heights
         return joint_cam, f, c, img_widths, img_heights
 
     def _H36FolderName(self, subject_id, act_id, subact_id, camera_id):
