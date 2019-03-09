@@ -123,3 +123,5 @@ data/Human36M/data/
 data/MPII/data/
 output*
 
+# bash scripts
+main/run.sh
