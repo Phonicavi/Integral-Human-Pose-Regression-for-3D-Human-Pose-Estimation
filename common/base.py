@@ -66,6 +66,7 @@ class Trainer(Base):
     
     def __init__(self, cfg):
         self.JointLocationLoss = DataParallelCriterion(loss.JointLocationLoss())
+        self.JointMSELoss = DataParallelCriterion(loss.JointMSELoss())
         super(Trainer, self).__init__(cfg, log_name = 'train_logs.txt')
 
     def get_optimizer(self, optimizer_name, model):

@@ -15,7 +15,6 @@ from utils.pose_utils import flip
 from utils.vis import vis_keypoints
 from tqdm import tqdm
 
-
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument('--gpu', type=str, dest='gpu_ids')
@@ -36,7 +35,6 @@ def parse_args():
         args.gpu_ids = ','.join(map(lambda x: str(x), list(range(*gpus))))
 
     return args
-
 
 def embedded_test(tensorx, test_epoch):
     tester = Tester(cfg, test_epoch)
@@ -199,14 +197,14 @@ def run_baseline():
             joints_have_depth = joints_have_depth.cuda()
 
             # forward
-            print('img_input', input_img.shape)
+            print('img_input:', input_img.shape, 'joint_img', joint_img.shape)
             heatmap_out = trainer.model(input_img)
-            print('heatmap_out', heatmap_out.shape)
 
             # backward
             JointLocationLoss = trainer.JointLocationLoss(heatmap_out, joint_img, joint_vis, joints_have_depth)
+            JointMSELoss = trainer.JointMSELoss(heatmap_out, joint_img, joint_vis)
 
-            loss = JointLocationLoss
+            loss = JointMSELoss#JointLocationLoss
 
             loss.backward()
             trainer.optimizer.step()
@@ -220,9 +218,13 @@ def run_baseline():
                     trainer.tot_timer.average_time, trainer.gpu_timer.average_time, trainer.read_timer.average_time),
                 '%.2fh/epoch' % (trainer.tot_timer.average_time / 3600. * trainer.itr_per_epoch),
                 '%s: %.4f' % ('loss_loc', JointLocationLoss.detach()),
+                '%s: %.4f' % ('loss_mse', JointMSELoss.detach()),
             ]
             trainer.logger.info(' '.join(screen))
-            tbx.add_scalars('Train', {'loss_loc': JointLocationLoss.detach()}, epoch * trainer.itr_per_epoch + itr)
+            tbx.add_scalars('Train', {
+                'loss_loc': JointLocationLoss.detach(),
+                'loss_mse': JointMSELoss.detach(),
+            }, epoch * trainer.itr_per_epoch + itr)
 
             trainer.tot_timer.toc()
             trainer.tot_timer.tic()
