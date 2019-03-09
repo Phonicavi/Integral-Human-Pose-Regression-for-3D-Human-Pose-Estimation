@@ -13,7 +13,7 @@ from dataset import DatasetLoader
 from timer import Timer
 from logger import colorlogger
 from nets.balanced_parallel import DataParallelModel, DataParallelCriterion
-from model import get_pose_net
+from model import get_pose_net, get_pose_net_baseline
 from nets import loss
 
 # dynamic dataset import
@@ -66,7 +66,6 @@ class Trainer(Base):
     
     def __init__(self, cfg):
         self.JointLocationLoss = DataParallelCriterion(loss.JointLocationLoss())
-        self.JointMSELoss = DataParallelCriterion(loss.JointMSELoss())
         super(Trainer, self).__init__(cfg, log_name = 'train_logs.txt')
 
     def get_optimizer(self, optimizer_name, model):
@@ -163,6 +162,119 @@ class Tester(Base):
         # prepare network
         self.logger.info("Creating graph...")
         model = get_pose_net(self.cfg, False, self.joint_num)
+        model = DataParallelModel(model).cuda()
+        ckpt = torch.load(model_path)
+        model.load_state_dict(ckpt['network'])
+        model.eval()
+
+        self.model = model
+
+    def _evaluate(self, preds, result_save_path):
+        return self.testset.evaluate(preds, result_save_path)
+
+class SimpleBaselineTrainer(Base):
+
+    def __init__(self, cfg):
+        self.JointMSELoss = DataParallelCriterion(loss.JointMSELoss())
+        super(SimpleBaselineTrainer, self).__init__(cfg, log_name='train_logs.txt')
+
+    def get_optimizer(self, optimizer_name, model):
+        if optimizer_name == 'adam':
+            optimizer = torch.optim.Adam(model.parameters(), lr=self.cfg.lr)
+        elif optimizer_name == 'sgd':
+            optimizer = torch.optim.SGD(model.parameters(), lr=self.cfg.lr, momentum=self.cfg.momentum,
+                                        weight_decay=self.cfg.wd)
+        else:
+            print("Error! Unknown optimizer name: ", optimizer_name)
+            assert 0
+
+        scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=self.cfg.lr_dec_epoch,
+                                                         gamma=self.cfg.lr_dec_factor)
+        return optimizer, scheduler
+
+    def _make_batch_generator(self):
+        # data load and construct batch generator
+        self.logger.info("Creating dataset...")
+        trainset_list = []
+        for i in range(len(self.cfg.trainset)):
+            trainset_list.append(eval(self.cfg.trainset[i])("train"))
+        trainset_loader = DatasetLoader(trainset_list, True, transforms.Compose([ \
+            transforms.ToTensor(),
+            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)] \
+            ))
+        batch_generator = DataLoader(dataset=trainset_loader, batch_size=self.cfg.num_gpus * self.cfg.batch_size,
+                                     shuffle=True, num_workers=self.cfg.num_thread, pin_memory=True)
+
+        self.joint_num = trainset_loader.joint_num[0]
+        self.itr_per_epoch = math.ceil(trainset_loader.__len__() / cfg.num_gpus / cfg.batch_size)
+        self.batch_generator = batch_generator
+
+    def _make_model(self):
+        # prepare network
+        self.logger.info("Creating graph and optimizer...")
+        model = get_pose_net_baseline(self.cfg, True, self.joint_num)
+        model = DataParallelModel(model).cuda()
+        optimizer, scheduler = self.get_optimizer(self.cfg.optimizer, model)
+        if self.cfg.continue_train:
+            start_epoch, model, optimizer, scheduler = self.load_model(model, optimizer, scheduler)
+            # todo: modify optimizer.lr, scheduler.milestones, scheduler.gamma
+            if self.cfg.optimizer == 'adam':
+                init_lr = self.cfg.lr
+                milestones = self.cfg.lr_dec_epoch
+                gamma = self.cfg.lr_dec_factor
+                scheduler.milestones = milestones
+                scheduler.gamma = gamma
+                if start_epoch < milestones[0]:
+                    optimizer.lr = init_lr
+                else:
+                    for item in milestones:
+                        if start_epoch >= item:
+                            init_lr *= gamma
+                        else:
+                            break
+                    optimizer.lr = init_lr
+        else:
+            start_epoch = 0
+        model.train()
+
+        self.start_epoch = start_epoch
+        self.model = model
+        self.optimizer = optimizer
+        self.scheduler = scheduler
+
+class SimpleBaselineTester(Base):
+
+    def __init__(self, cfg, test_epoch):
+        self.coord_out = loss.soft_argmax
+        self.test_epoch = int(test_epoch)
+        super(SimpleBaselineTester, self).__init__(cfg, log_name='test_logs.txt')
+
+    def _make_batch_generator(self):
+        # data load and construct batch generator
+        self.logger.info("Creating dataset...")
+        testset = eval(self.cfg.testset)("test")
+        testset_loader = DatasetLoader(testset, False, transforms.Compose([ \
+            transforms.ToTensor(),
+            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)] \
+            ))
+        batch_generator = DataLoader(dataset=testset_loader, batch_size=self.cfg.num_gpus * self.cfg.test_batch_size,
+                                     shuffle=False, num_workers=self.cfg.num_thread, pin_memory=True)
+
+        self.testset = testset
+        self.joint_num = testset_loader.joint_num
+        self.skeleton = testset_loader.skeleton
+        self.flip_pairs = testset.flip_pairs
+        self.tot_sample_num = testset_loader.__len__()
+        self.batch_generator = batch_generator
+
+    def _make_model(self):
+        model_path = os.path.join(self.cfg.model_dir, 'snapshot_%d.pth.tar' % self.test_epoch)
+        assert os.path.exists(model_path), 'Cannot find model at ' + model_path
+        self.logger.info('Load checkpoint from {}'.format(model_path))
+
+        # prepare network
+        self.logger.info("Creating graph...")
+        model = get_pose_net_baseline(self.cfg, False, self.joint_num)
         model = DataParallelModel(model).cuda()
         ckpt = torch.load(model_path)
         model.load_state_dict(ckpt['network'])

@@ -78,12 +78,19 @@ class RegressNet(nn.Module):
 
     def forward(self, x):
 
+        print('[1a-before pooling]', x.shape)
         x = self.pooling(x)
+        print('[1b-after pooling]', x.shape)
         x = self.w1(x)
+        print('[2a-after w1]', x.shape)
         x = self.batch_norm1(x)
+        print('[2b-after bn1]', x.shape)
         x = self.relu(x)
+        print('[2c-after relu]', x.shape)
         x = self.dropout(x)
+        print('[3a-before w2]', x.shape)
         x = self.w2(x)
+        print('[3b-after w2]', x.shape)
 
         return x
 
