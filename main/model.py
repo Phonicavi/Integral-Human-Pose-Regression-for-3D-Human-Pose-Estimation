@@ -55,6 +55,40 @@ class HeadNet(nn.Module):
                 nn.init.normal_(m.weight, std=0.001)
                 nn.init.constant_(m.bias, 0)
 
+class RegressNet(nn.Module):
+
+    def __init__(self, joint_num, p_dropout=0.5):
+        self.inplanes = 2048
+        self.midplanes = 1024
+        self.outplanes = joint_num * cfg.depth_dim
+        self.p_dropout = p_dropout
+
+        super(RegressNet, self).__init__()
+
+        self.pooling = nn.AvgPool2d(8)
+
+        self.w1 = nn.Linear(self.inplanes, self.midplanes)
+        self.batch_norm1 = nn.BatchNorm1d(self.midplanes)
+        self.relu = nn.ReLU(inplace=True)
+        self.dropout = nn.Dropout(self.p_dropout)
+        self.w2 = nn.Linear(self.midplanes, self.outplanes)
+
+    def forward(self, x):
+
+        x = self.pooling(x)
+        x = self.w1(x)
+        x = self.batch_norm1(x)
+        x = self.relu(x)
+        x = self.dropout(x)
+        x = self.w2(x)
+
+        return x
+
+    def init_weights(self):
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.kaiming_normal_(m.weight)
+
 class ResPoseNet(nn.Module):
     def __init__(self, backbone, head):
         super(ResPoseNet, self).__init__()
@@ -70,6 +104,17 @@ def get_pose_net(cfg, is_train, joint_num):
     
     backbone = ResNetBackbone(cfg.resnet_type)
     head_net = HeadNet(joint_num)
+    if is_train:
+        backbone.init_weights()
+        head_net.init_weights()
+
+    model = ResPoseNet(backbone, head_net)
+    return model
+
+def get_pose_net_baseline(cfg, is_train, joint_num):
+
+    backbone = ResNetBackbone(cfg.resnet_type)
+    head_net = RegressNet(joint_num)
     if is_train:
         backbone.init_weights()
         head_net.init_weights()
