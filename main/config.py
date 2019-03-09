@@ -33,7 +33,7 @@ class Config:
 
     ## training config
     lr_dec_epoch = [210, 280]
-    end_epoch = 300
+    end_epoch = 1000
     lr = 1e-3
     lr_dec_factor = 0.1
     optimizer = 'adam'
