@@ -62,6 +62,10 @@ class JointMSELoss(nn.Module):
 
         batch_size = target.size(0)
         num_joints = target.size(1)
+
+        _assert_no_grad(target)
+        _assert_no_grad(target_weight)
+
         coords_pred = output.reshape((batch_size, num_joints, -1)).split(1, 1)
         coords_gt = target.reshape((batch_size, num_joints, -1)).split(1, 1)
         loss = 0
