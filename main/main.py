@@ -114,6 +114,7 @@ def embedded_test_baseline(tensorx, test_epoch):
             # if cfg.num_gpus > 1:
             #     heatmap_out = gather(heatmap_out, 0)
             # coord_out = soft_argmax(heatmap_out, tester.joint_num)
+
             coords_out = tester.model(input_img)
             if cfg.num_gpus > 1:
                 coords_out = gather(coords_out, 0)
