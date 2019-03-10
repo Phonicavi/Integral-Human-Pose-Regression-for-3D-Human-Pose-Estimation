@@ -64,8 +64,9 @@ class Base(object):
 
 class Trainer(Base):
     
-    def __init__(self, cfg):
+    def __init__(self, cfg, default_data_split="train"):
         self.JointLocationLoss = DataParallelCriterion(loss.JointLocationLoss())
+        self.default_data_split = default_data_split
         super(Trainer, self).__init__(cfg, log_name = 'train_logs.txt')
 
     def get_optimizer(self, optimizer_name, model):
@@ -85,12 +86,12 @@ class Trainer(Base):
         self.logger.info("Creating dataset...")
         trainset_list = []
         for i in range(len(self.cfg.trainset)):
-            trainset_list.append(eval(self.cfg.trainset[i])("train"))
-        trainset_loader = DatasetLoader(trainset_list, True, transforms.Compose([\
-                                                                                                        transforms.ToTensor(),
-                                                                                                        transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]\
-                                                                                                        ))
-        batch_generator = DataLoader(dataset=trainset_loader, batch_size=self.cfg.num_gpus*self.cfg.batch_size, shuffle=True, num_workers=self.cfg.num_thread, pin_memory=True)
+            trainset_list.append(eval(self.cfg.trainset[i])(self.default_data_split))
+        trainset_loader = DatasetLoader(trainset_list, True, transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]))
+        batch_generator = DataLoader(dataset=trainset_loader, batch_size=self.cfg.num_gpus * self.cfg.batch_size,
+                                     shuffle=True, num_workers=self.cfg.num_thread, pin_memory=True)
         
         self.joint_num = trainset_loader.joint_num[0]
         self.itr_per_epoch = math.ceil(trainset_loader.__len__() / cfg.num_gpus / cfg.batch_size)
@@ -131,20 +132,21 @@ class Trainer(Base):
 
 class Tester(Base):
     
-    def __init__(self, cfg, test_epoch):
+    def __init__(self, cfg, test_epoch, default_data_split="test"):
         self.coord_out = loss.soft_argmax
         self.test_epoch = int(test_epoch)
+        self.default_data_split = default_data_split
         super(Tester, self).__init__(cfg, log_name = 'test_logs.txt')
 
     def _make_batch_generator(self):
         # data load and construct batch generator
         self.logger.info("Creating dataset...")
-        testset = eval(self.cfg.testset)("test")
-        testset_loader = DatasetLoader(testset, False, transforms.Compose([\
-                                                                                                        transforms.ToTensor(),
-                                                                                                        transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]\
-                                                                                                        ))
-        batch_generator = DataLoader(dataset=testset_loader, batch_size=self.cfg.num_gpus*self.cfg.test_batch_size, shuffle=False, num_workers=self.cfg.num_thread, pin_memory=True)
+        testset = eval(self.cfg.testset)(self.default_data_split)
+        testset_loader = DatasetLoader(testset, False, transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]))
+        batch_generator = DataLoader(dataset=testset_loader, batch_size=self.cfg.num_gpus * self.cfg.test_batch_size,
+                                     shuffle=False, num_workers=self.cfg.num_thread, pin_memory=True)
         
         self.testset = testset
         self.joint_num = testset_loader.joint_num
@@ -174,8 +176,9 @@ class Tester(Base):
 
 class SimpleBaselineTrainer(Base):
 
-    def __init__(self, cfg):
+    def __init__(self, cfg, default_data_split="train"):
         self.JointMSELoss = DataParallelCriterion(loss.JointMSELoss())
+        self.default_data_split = default_data_split
         super(SimpleBaselineTrainer, self).__init__(cfg, log_name='train_logs.txt')
 
     def get_optimizer(self, optimizer_name, model):
@@ -197,11 +200,10 @@ class SimpleBaselineTrainer(Base):
         self.logger.info("Creating dataset...")
         trainset_list = []
         for i in range(len(self.cfg.trainset)):
-            trainset_list.append(eval(self.cfg.trainset[i])("train"))
-        trainset_loader = DatasetLoader(trainset_list, True, transforms.Compose([ \
+            trainset_list.append(eval(self.cfg.trainset[i])(self.default_data_split))
+        trainset_loader = DatasetLoader(trainset_list, True, transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)] \
-            ))
+            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]))
         batch_generator = DataLoader(dataset=trainset_loader, batch_size=self.cfg.num_gpus * self.cfg.batch_size,
                                      shuffle=True, num_workers=self.cfg.num_thread, pin_memory=True)
 
@@ -244,19 +246,19 @@ class SimpleBaselineTrainer(Base):
 
 class SimpleBaselineTester(Base):
 
-    def __init__(self, cfg, test_epoch):
+    def __init__(self, cfg, test_epoch, default_data_split="test"):
         self.coord_out = loss.soft_argmax
         self.test_epoch = int(test_epoch)
+        self.default_data_split = default_data_split
         super(SimpleBaselineTester, self).__init__(cfg, log_name='test_logs.txt')
 
     def _make_batch_generator(self):
         # data load and construct batch generator
         self.logger.info("Creating dataset...")
-        testset = eval(self.cfg.testset)("test")
-        testset_loader = DatasetLoader(testset, False, transforms.Compose([ \
+        testset = eval(self.cfg.testset)(self.default_data_split)
+        testset_loader = DatasetLoader(testset, False, transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)] \
-            ))
+            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]))
         batch_generator = DataLoader(dataset=testset_loader, batch_size=self.cfg.num_gpus * self.cfg.test_batch_size,
                                      shuffle=False, num_workers=self.cfg.num_thread, pin_memory=True)
 
