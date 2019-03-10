@@ -87,6 +87,8 @@ class MPII:
                 'c': np.ones(2) # dummy value
             })
 
+        print('[dataset.MPII] loaded: %d' % len(data))
+
         return data
 
     def evaluate(self, preds, result_dir):

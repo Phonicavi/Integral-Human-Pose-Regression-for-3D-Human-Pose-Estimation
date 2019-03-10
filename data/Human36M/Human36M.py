@@ -165,6 +165,8 @@ class Human36M:
                     'c': c
                 })
 
+        print('[dataset.H36M] loaded: %d' % len(data))
+
         return data
 
     def evaluate(self, preds, result_dir):
