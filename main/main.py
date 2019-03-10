@@ -102,20 +102,21 @@ def embedded_test_baseline(tensorx, test_epoch):
         for itr, input_img in enumerate(tqdm(tester.batch_generator)):
 
             input_img = input_img.cuda()
+            batch_size = input_img.size(0)
+            if batch_size < cfg.test_batch_size * cfg.num_gpus:
+                continue
 
             # forward
             # heatmap_out = tester.model(input_img)
             # if cfg.num_gpus > 1:
             #     heatmap_out = gather(heatmap_out, 0)
             # coord_out = soft_argmax(heatmap_out, tester.joint_num)
-
             coords_out = tester.model(input_img)
             if cfg.num_gpus > 1:
                 coords_out = gather(coords_out, 0)
-            batch_size = input_img.size(0)
-            num_joints = input_img.size(1)
-            coord_out = coords_out.reshape((batch_size, num_joints, -1)).split(1, 1)
 
+            num_joints = tester.joint_num
+            coord_out = coords_out.reshape((batch_size, num_joints, -1))
 
             # if cfg.flip_test:
             #     flipped_input_img = flip(input_img, dims=3)
@@ -130,7 +131,7 @@ def embedded_test_baseline(tensorx, test_epoch):
             #                                                                                          :, pair[0],
             #                                                                                          :].clone()
             #     coord_out = (coord_out + flipped_coord_out) / 2.
-
+            #
             # vis = True
             # if vis:
             #     filename = str(itr)
