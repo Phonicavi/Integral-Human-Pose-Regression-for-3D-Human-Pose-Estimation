@@ -299,7 +299,7 @@ def run_baseline():
             'scheduler': trainer.scheduler.state_dict(),
         }, epoch)
 
-        if not (epoch % 20) or epoch + 1 >= cfg.end_epoch:
+        if not (epoch % 10) or epoch + 1 >= cfg.end_epoch:
             embedded_test_baseline(tbx, epoch)
 
 
