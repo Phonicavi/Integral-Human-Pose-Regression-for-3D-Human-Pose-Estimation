@@ -9,7 +9,7 @@ import torch
 from base import Tester
 from torch.nn.parallel.scatter_gather import gather
 from nets.loss import soft_argmax
-from utils.vis import vis_keypoints
+from utils.vis import vis_keypoints, vis_3d_skeleton
 from utils.pose_utils import flip
 import torch.backends.cudnn as cudnn
 
@@ -47,14 +47,14 @@ def main():
 
     cfg.testset = 'MPII'
 
-    tester = Tester(cfg, args.test_epoch, default_data_split="train")
+    tester = Tester(cfg, args.test_epoch, default_data_split="train")  # force_convert=True
     tester._make_batch_generator()
     tester._make_model()
 
     preds = []
 
     with torch.no_grad():
-        for itr, input_img in enumerate(tqdm(tester.batch_generator)):
+        for itr, (input_img, joint_vis) in enumerate(tqdm(tester.batch_generator)):
 
             input_img = input_img.cuda()
             batch_size = input_img.size(0)
@@ -81,6 +81,9 @@ def main():
                 tmpimg = vis_keypoints(tmpimg, tmpkps, tester.skeleton)
                 os.makedirs(osp.join(cfg.vis_dir, '%d-mpii' % tester.test_epoch), exist_ok=True)
                 cv2.imwrite(osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + filename + '_output.jpg'), tmpimg)
+
+                vis_3d_skeleton(kpt_3d=coord_out, kpt_3d_vis=joint_vis, kps_lines=tester.skeleton,
+                                filename=osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + filename + '_figure.jpg'))
 
             coord_out = coord_out.cpu().numpy()
             preds.append(coord_out)

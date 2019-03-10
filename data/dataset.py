@@ -152,7 +152,11 @@ class DatasetLoader(Dataset):
             return img_patch, joint_img, joint_vis, joints_have_depth
         else:
             img_patch = self.transform(img_patch)
-            return img_patch
+            if self.force_convert:
+                joint_vis = (joint_vis > 0).astype(np.float32)
+                return img_patch, joint_vis
+            else:
+                return img_patch
 
     def __len__(self):
         if self.multiple_db:

@@ -79,6 +79,9 @@ def vis_3d_skeleton(kpt_3d, kpt_3d_vis, kps_lines, filename=None):
     #ax.set_zlim([-cfg.input_shape[0],0])
     ax.legend()
 
-    plt.show()
+    # plt.show()
     cv2.waitKey(0)
+
+    if filename is not None:
+        plt.savefig(filename)
 
