@@ -263,7 +263,6 @@ def run_baseline():
             joints_have_depth = joints_have_depth.cuda()
 
             # forward
-            #print('img_input:', input_img.shape, 'joint_img', joint_img.shape)
             heatmap_out = trainer.model(input_img)
 
             # backward
