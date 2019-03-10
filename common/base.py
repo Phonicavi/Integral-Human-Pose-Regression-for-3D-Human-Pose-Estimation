@@ -142,9 +142,21 @@ class Tester(Base):
         # data load and construct batch generator
         self.logger.info("Creating dataset...")
         testset = eval(self.cfg.testset)(self.default_data_split)
-        testset_loader = DatasetLoader(testset, False, transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]))
+        force_convert = False
+        curr_jn = None  # mpii-joint_name
+        ref_jn = None  # h36m-joint_name
+        if self.default_data_split == "train":
+            # todo: i.e. this=mpii, target=h36m
+            force_convert = True
+            curr_jn = ('R_Ankle', 'R_Knee', 'R_Hip', 'L_Hip', 'L_Knee', 'L_Ankle', 'Pelvis', 'Thorax', 'Neck', 'Head', 'R_Wrist', 'R_Elbow', 'R_Shoulder', 'L_Shoulder', 'L_Elbow', 'L_Wrist')
+            ref_jn = ('Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso',
+                      'Neck', 'Nose', 'Head',
+                      'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist', )#'Thorax')
+        testset_loader = DatasetLoader(testset, False,
+                                       transforms.Compose([
+                                           transforms.ToTensor(),
+                                           transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]),
+                                       force_convert=force_convert, curr_jn=curr_jn, ref_jn=ref_jn)
         batch_generator = DataLoader(dataset=testset_loader, batch_size=self.cfg.num_gpus * self.cfg.test_batch_size,
                                      shuffle=False, num_workers=self.cfg.num_thread, pin_memory=True)
         

@@ -47,7 +47,7 @@ def main():
 
     cfg.testset = 'MPII'
 
-    tester = Tester(cfg, args.test_epoch)
+    tester = Tester(cfg, args.test_epoch, default_data_split="train")
     tester._make_batch_generator()
     tester._make_model()
 
@@ -87,7 +87,8 @@ def main():
 
     # evaluate
     preds = np.concatenate(preds, axis=0)
-    tester._evaluate(preds, cfg.result_dir)
+    # todo: notice that mpii._evaluate has not been implemented
+    # tester._evaluate(preds, cfg.result_dir)
 
 
 if __name__ == "__main__":

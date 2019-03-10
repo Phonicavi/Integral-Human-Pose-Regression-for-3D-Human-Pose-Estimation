@@ -12,7 +12,7 @@ from utils.pose_utils import fliplr_joints
 from config import cfg
 
 class DatasetLoader(Dataset):
-    def __init__(self, db, is_train, transform):
+    def __init__(self, db, is_train, transform, force_convert=False, curr_jn=None, ref_jn=None):
         
         if isinstance(db, list):
             self.multiple_db = True
@@ -31,9 +31,15 @@ class DatasetLoader(Dataset):
             self.lr_skeleton = db.lr_skeleton
             self.flip_pairs = db.flip_pairs
             self.joints_have_depth = db.joints_have_depth
+            if force_convert:
+                self.joint_num = len(ref_jn)
         
         self.transform = transform
         self.is_train = is_train
+        # todo: hard-code for mpii=>h36m
+        self.force_convert = force_convert
+        self.curr_jn = curr_jn
+        self.ref_jn = ref_jn
 
         if self.is_train:
             self.do_augment = True
@@ -132,6 +138,9 @@ class DatasetLoader(Dataset):
         if self.multiple_db:
             joint_img = transform_joint_to_other_db(joint_img, joints_name, ref_joints_name)
             joint_vis = transform_joint_to_other_db(joint_vis, joints_name, ref_joints_name)
+        if self.force_convert:
+            joint_img = transform_joint_to_other_db(joint_img, self.curr_jn, self.ref_jn)
+            joint_vis = transform_joint_to_other_db(joint_vis, self.curr_jn, self.ref_jn)
 
         if self.is_train:
             img_patch = self.transform(img_patch)
