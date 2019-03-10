@@ -46,6 +46,9 @@ def embedded_test(tensorx, test_epoch):
         for itr, input_img in enumerate(tqdm(tester.batch_generator)):
 
             input_img = input_img.cuda()
+            batch_size = input_img.size(0)
+            if batch_size < cfg.test_batch_size * cfg.num_gpus:
+                continue
 
             # forward
             heatmap_out = tester.model(input_img)

@@ -176,11 +176,11 @@ class Human36M:
 
         gts = self.load_data()
 
-        # assert len(gts) == len(preds)
         if len(gts) != len(preds):
             min_length = min(len(gts), len(preds))
             gts = gts[: min_length]
             preds = preds[: min_length]
+        assert len(gts) == len(preds)
 
         sample_num = len(gts)
         joint_num = self.joint_num
