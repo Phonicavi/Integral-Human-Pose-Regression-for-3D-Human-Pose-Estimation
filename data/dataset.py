@@ -12,7 +12,7 @@ from utils.pose_utils import fliplr_joints
 from config import cfg
 
 class DatasetLoader(Dataset):
-    def __init__(self, db, is_train, transform, force_convert=False, curr_jn=None, ref_jn=None):
+    def __init__(self, db, is_train, transform, force_convert=False, curr_jn=None, ref_jn=None, ref_sks=None):
         
         if isinstance(db, list):
             self.multiple_db = True
@@ -33,6 +33,7 @@ class DatasetLoader(Dataset):
             self.joints_have_depth = db.joints_have_depth
             if force_convert:
                 self.joint_num = len(ref_jn)
+                self.skeleton, self.lr_skeleton, self.flip_pairs = ref_sks
         
         self.transform = transform
         self.is_train = is_train
