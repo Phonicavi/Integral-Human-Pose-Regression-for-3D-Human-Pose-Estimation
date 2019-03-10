@@ -82,7 +82,8 @@ def main():
                 os.makedirs(osp.join(cfg.vis_dir, '%d-mpii' % tester.test_epoch), exist_ok=True)
                 cv2.imwrite(osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + filename + '_output.jpg'), tmpimg)
 
-                vis_3d_skeleton(kpt_3d=coord_out, kpt_3d_vis=joint_vis, kps_lines=tester.skeleton,
+                vis_3d_skeleton(kpt_3d=coord_out.cpu().numpy()[0].copy(), kpt_3d_vis=joint_vis.cpu().numpy()[0].copy(),
+                                kps_lines=tester.skeleton,
                                 filename=osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + filename + '_figure.jpg'))
 
             coord_out = coord_out.cpu().numpy()
