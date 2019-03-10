@@ -87,8 +87,8 @@ def main():
                 tmpkps[:2,:] = coord_out.cpu()[0,:,:2].transpose(1,0) / cfg.output_shape[0] * cfg.input_shape[0]
                 tmpkps[2,:] = 1
                 tmpimg = vis_keypoints(tmpimg, tmpkps, tester.skeleton)
-                os.makedirs(osp.join(cfg.vis_dir, '%d' % args.test_epoch), exist_ok=True)
-                cv2.imwrite(osp.join(cfg.vis_dir, ('%d/' % args.test_epoch) + filename + '_output.jpg'), tmpimg)
+                os.makedirs(osp.join(cfg.vis_dir, '%d' % tester.test_epoch), exist_ok=True)
+                cv2.imwrite(osp.join(cfg.vis_dir, ('%d/' % tester.test_epoch) + filename + '_output.jpg'), tmpimg)
 
             coord_out = coord_out.cpu().numpy()
             preds.append(coord_out)
