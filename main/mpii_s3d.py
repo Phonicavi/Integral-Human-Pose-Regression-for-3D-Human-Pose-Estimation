@@ -58,8 +58,9 @@ def main():
 
             input_img = input_img.cuda()
             batch_size = input_img.size(0)
-            if batch_size < cfg.test_batch_size * cfg.num_gpus:
-                continue
+
+            # if batch_size < cfg.test_batch_size * cfg.num_gpus:
+            #     continue
 
             # forward
             heatmap_out = tester.model(input_img)
@@ -67,7 +68,7 @@ def main():
                 heatmap_out = gather(heatmap_out, 0)
             coord_out = soft_argmax(heatmap_out, tester.joint_num)
 
-            vis = True
+            vis = False
             if vis:
                 filename = str(itr)
                 tmpimg = input_img[0].cpu().numpy()
@@ -91,6 +92,9 @@ def main():
 
     # evaluate
     preds = np.concatenate(preds, axis=0)
+
+    import pickle
+    pickle.dump(preds, 'mpii-train.pkl')
     # todo: notice that mpii._evaluate has not been implemented
     # tester._evaluate(preds, cfg.result_dir)
 
