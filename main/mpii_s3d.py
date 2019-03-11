@@ -127,8 +127,10 @@ def generate_mpii_batch():
                 joint_vis = gather(joint_vis, 0)
                 img_path = gather(img_path, 0)
 
-            vis_all += [joint_vis[i].cpu().numpy() for i in range(len(joint_vis))]
-            path_all += img_path
+            # vis_all += [joint_vis[i].cpu().numpy() for i in range(len(joint_vis))]
+            # path_all += img_path
+            vis_all.append(joint_vis)
+            path_all.append(img_path)
 
     vis_all = np.concatenate(vis_all, axis=0)
     path_all = np.concatenate(path_all, axis=0)
@@ -138,6 +140,21 @@ def generate_mpii_batch():
     pickle.dump(path_all, open(osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + 'mpii-train_path.pkl'), 'wb'))
 
 
+def draw_3d_sample():
+    import pickle
+    pr = pickle.load(open('mpii-train.pkl', 'rb'))
+    s3d = pr[0]
+    ref_skeleton = ((0, 7), (7, 8), (8, 9), (9, 10),
+                    (8, 11), (11, 12), (12, 13),
+                    (8, 14), (14, 15), (15, 16),
+                    (0, 1), (1, 2), (2, 3),
+                    (0, 4), (4, 5), (5, 6))
+    vis_dummy = np.ones((17, 1))
+
+    vis_3d_skeleton(kpt_3d=s3d, kpt_3d_vis=vis_dummy, kps_lines=ref_skeleton)
+
+
 if __name__ == "__main__":
     # main()
     generate_mpii_batch()
+    # draw_3d_sample()
