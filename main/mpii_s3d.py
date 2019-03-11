@@ -52,6 +52,7 @@ def main():
     tester._make_model()
 
     preds = []
+    os.makedirs(osp.join(cfg.vis_dir, '%d-mpii' % tester.test_epoch), exist_ok=True)
 
     with torch.no_grad():
         for itr, (input_img, joint_vis) in enumerate(tqdm(tester.batch_generator)):
@@ -80,9 +81,7 @@ def main():
                 tmpkps[:2, :] = coord_out.cpu()[0, :, :2].transpose(1, 0) / cfg.output_shape[0] * cfg.input_shape[0]
                 tmpkps[2, :] = 1
                 tmpimg = vis_keypoints(tmpimg, tmpkps, tester.skeleton)
-                os.makedirs(osp.join(cfg.vis_dir, '%d-mpii' % tester.test_epoch), exist_ok=True)
                 cv2.imwrite(osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + filename + '_output.jpg'), tmpimg)
-
                 vis_3d_skeleton(kpt_3d=coord_out.cpu().numpy()[0].copy(), kpt_3d_vis=joint_vis.cpu().numpy()[0].copy(),
                                 kps_lines=tester.skeleton,
                                 filename=osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + filename + '_figure.jpg'))
@@ -94,7 +93,7 @@ def main():
     preds = np.concatenate(preds, axis=0)
 
     import pickle
-    pickle.dump(preds, 'mpii-train.pkl')
+    pickle.dump(preds, open(osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + 'mpii-train.pkl'), 'wb'))
     # todo: notice that mpii._evaluate has not been implemented
     # tester._evaluate(preds, cfg.result_dir)
 
