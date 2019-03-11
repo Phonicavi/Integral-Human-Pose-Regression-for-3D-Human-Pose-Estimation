@@ -155,6 +155,6 @@ def draw_3d_sample():
 
 
 if __name__ == "__main__":
-    # main()
-    generate_mpii_batch()
+    main()
+    # generate_mpii_batch()
     # draw_3d_sample()

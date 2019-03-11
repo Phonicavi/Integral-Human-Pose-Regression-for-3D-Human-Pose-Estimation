@@ -125,3 +125,7 @@ output*
 
 # bash scripts
 main/run.sh
+
+# dumped data
+main/mpii_s3d.h5
+main/*.pkl
