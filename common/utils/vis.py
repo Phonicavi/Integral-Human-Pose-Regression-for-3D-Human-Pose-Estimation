@@ -86,7 +86,7 @@ def vis_3d_skeleton(kpt_3d, kpt_3d_vis, kps_lines, filename=None):
     # ax.legend()
 
     # plt.show()
-    cv2.waitKey(0)
+    # cv2.waitKey(0)
 
     if filename is not None:
         plt.savefig(filename)

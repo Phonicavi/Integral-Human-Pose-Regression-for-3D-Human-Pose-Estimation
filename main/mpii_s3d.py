@@ -141,17 +141,28 @@ def generate_mpii_batch():
 
 
 def draw_3d_sample():
-    import pickle
-    pr = pickle.load(open('mpii-train.pkl', 'rb'))
-    s3d = pr[0]
+    import h5py
     ref_skeleton = ((0, 7), (7, 8), (8, 9), (9, 10),
                     (8, 11), (11, 12), (12, 13),
                     (8, 14), (14, 15), (15, 16),
                     (0, 1), (1, 2), (2, 3),
                     (0, 4), (4, 5), (5, 6))
-    vis_dummy = np.ones((17, 1))
+    mpii_dir = "/data/dataset/mpii/images/"
 
-    vis_3d_skeleton(kpt_3d=s3d, kpt_3d_vis=vis_dummy, kps_lines=ref_skeleton)
+    with h5py.File('mpii_s3d.h5', 'r') as h:
+        s3ds = h['s3d'].value
+        vis = h['vis'].value
+        pth = h['img_path'].value
+
+        for i, fp in enumerate(pth):
+            img_name = str(fp).strip('\'').split('/')[-1]
+            img = cv2.imread(osp.join(mpii_dir, img_name), cv2.IMREAD_COLOR | cv2.IMREAD_IGNORE_ORIENTATION)
+            cv2.imshow('%s' % img_name.split('.')[0], img)
+            s3d = s3ds[i]
+            vi = vis[i]
+
+            vis_3d_skeleton(kpt_3d=s3d, kpt_3d_vis=vi, kps_lines=ref_skeleton)
+            cv2.waitKey()
 
 
 if __name__ == "__main__":
