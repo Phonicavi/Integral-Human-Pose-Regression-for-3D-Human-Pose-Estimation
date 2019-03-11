@@ -154,7 +154,7 @@ class DatasetLoader(Dataset):
             img_patch = self.transform(img_patch)
             if self.force_convert:
                 joint_vis = (joint_vis > 0).astype(np.float32)
-                return img_patch, joint_vis
+                return img_patch, joint_vis, data['img_path']
             else:
                 return img_patch
 

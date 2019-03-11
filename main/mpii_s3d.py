@@ -55,7 +55,7 @@ def main():
     os.makedirs(osp.join(cfg.vis_dir, '%d-mpii' % tester.test_epoch), exist_ok=True)
 
     with torch.no_grad():
-        for itr, (input_img, joint_vis) in enumerate(tqdm(tester.batch_generator)):
+        for itr, (input_img, joint_vis, _) in enumerate(tqdm(tester.batch_generator)):
 
             input_img = input_img.cuda()
             batch_size = input_img.size(0)
@@ -98,5 +98,46 @@ def main():
     # tester._evaluate(preds, cfg.result_dir)
 
 
+def generate_mpii_batch():
+
+    args = parse_args()
+    cfg.set_args(args.gpu_ids, continue_train=False, output_dir=args.output_dir)
+    cudnn.fastest = True
+    cudnn.benchmark = True
+    cudnn.deterministic = False
+    cudnn.enabled = True
+
+    cfg.testset = 'MPII'
+
+    tester = Tester(cfg, args.test_epoch, default_data_split="train")  # force_convert=True
+    tester._make_batch_generator()
+    tester._make_model()
+
+    vis_all = []
+    path_all = []
+    os.makedirs(osp.join(cfg.vis_dir, '%d-mpii' % tester.test_epoch), exist_ok=True)
+
+    with torch.no_grad():
+        for itr, (input_img, joint_vis, img_path) in enumerate(tqdm(tester.batch_generator)):
+
+            input_img = input_img.cuda()
+            # batch_size = input_img.size(0)
+            if cfg.num_gpus > 1:
+                input_img = gather(input_img, 0)
+                joint_vis = gather(joint_vis, 0)
+                img_path = gather(img_path, 0)
+
+            vis_all += [joint_vis[i].cpu().numpy() for i in range(len(joint_vis))]
+            path_all += img_path
+
+    vis_all = np.concatenate(vis_all, axis=0)
+    path_all = np.concatenate(path_all, axis=0)
+
+    import pickle
+    pickle.dump(vis_all, open(osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + 'mpii-train_vis.pkl'), 'wb'))
+    pickle.dump(path_all, open(osp.join(cfg.vis_dir, ('%d-mpii/' % tester.test_epoch) + 'mpii-train_path.pkl'), 'wb'))
+
+
 if __name__ == "__main__":
-    main()
+    # main()
+    generate_mpii_batch()
