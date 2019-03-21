@@ -53,7 +53,7 @@ def main():
     preds = []
 
     with torch.no_grad():
-        for itr, (input_img, _, _, _, _, _, _, _, _) in enumerate(tqdm(tester.batch_generator)):
+        for itr, input_img in enumerate(tqdm(tester.batch_generator)):
 
             input_img = input_img.cuda()
             batch_size = input_img.size(0)

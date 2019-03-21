@@ -19,7 +19,7 @@ EPS = 1E-5
 
 class UP3D(Dataset):
     def __init__(self, data_label, const_dict, normalize_dict, img_size=256, seg_size=256, start_id=0, end_id=None):
-        self.data_dir = osp.join('/data/dataset', 'up')
+        self.data_dir = osp.join('/mnt/lustre/share/qiufeng/dataset', 'up')
         self.proc_dir = osp.join(self.data_dir, './pproc/img/')
         assert osp.exists(self.data_dir) and osp.exists(self.proc_dir)
         self.data_label = data_label
@@ -85,27 +85,27 @@ class UP3D(Dataset):
             self.kernel_dataset.load_np(running_index=running_idx, img_size=self.img_size, seg_size=self.seg_size)
         if self.transform is not None:
             img_ret = self.transform(img_ret.transpose((1, 2, 0)))
-        ann_ret = ann_ret.astype(np.float32)
-        s2d21 = np.zeros((self.joint_num, 2), dtype=np.float32)
-        s2d21[:3] = s2d_ret[:3]
-        s2d21[4:8] = s2d_ret[3:7]
-        s2d21[9:12] = s2d_ret[7:10]
-        s2d21[13:16] = s2d_ret[10:13]
-        s2d21[17:20] = s2d_ret[13:16]
-        s2d_vis = np.ones((self.joint_num, 1))
-        for j in range(ann_ret.shape[0]):
-            s2d_vis[j] *= ((s2d21[j, 0] >= 0) &
-                           (s2d21[j, 0] < self.img_size) &
-                           (s2d21[j, 1] >= 0) &
-                           (s2d21[j, 1] < self.img_size))
-        s2d_vis = (s2d_vis > 0).astype(np.float32)
-        s2d_vis[3], s2d_vis[8], s2d_vis[12], s2d_vis[16], s2d_vis[20] = 0., 0., 0., 0., 0.
-        K = self.const_dict['K_mean'].astype(np.float32)
-        dist = self.const_dict['dist_mean'].astype(np.float32)
-        # bbox: ellip24-style
-        bbox_ret = np.array([self.img_size / 2., self.img_size / 2., self.img_size], dtype=np.float32)
-        l12 = self.l_gt.copy().astype(np.float32)
-        return img_ret, ann_ret, s2d21, s2d_vis, K, dist, bbox_ret, l12, is_valid
+        # ann_ret = ann_ret.astype(np.float32)
+        # s2d21 = np.zeros((self.joint_num, 2), dtype=np.float32)
+        # s2d21[:3] = s2d_ret[:3]
+        # s2d21[4:8] = s2d_ret[3:7]
+        # s2d21[9:12] = s2d_ret[7:10]
+        # s2d21[13:16] = s2d_ret[10:13]
+        # s2d21[17:20] = s2d_ret[13:16]
+        # s2d_vis = np.ones((self.joint_num, 1))
+        # for j in range(ann_ret.shape[0]):
+        #     s2d_vis[j] *= ((s2d21[j, 0] >= 0) &
+        #                    (s2d21[j, 0] < self.img_size) &
+        #                    (s2d21[j, 1] >= 0) &
+        #                    (s2d21[j, 1] < self.img_size))
+        # s2d_vis = (s2d_vis > 0).astype(np.float32)
+        # s2d_vis[3], s2d_vis[8], s2d_vis[12], s2d_vis[16], s2d_vis[20] = 0., 0., 0., 0., 0.
+        # K = self.const_dict['K_mean'].astype(np.float32)
+        # dist = self.const_dict['dist_mean'].astype(np.float32)
+        # # bbox: ellip24-style
+        # bbox_ret = np.array([self.img_size / 2., self.img_size / 2., self.img_size], dtype=np.float32)
+        # l12 = self.l_gt.copy().astype(np.float32)
+        return img_ret#, ann_ret, s2d21, s2d_vis, K, dist, bbox_ret, l12, is_valid
 
 
 def unified_cameras(h5_obj):
