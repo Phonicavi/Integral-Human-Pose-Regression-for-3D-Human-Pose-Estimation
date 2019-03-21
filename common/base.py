@@ -4,9 +4,12 @@ import math
 import time
 import glob
 import abc
+import numpy as np
 from torch.utils.data import DataLoader
 import torch.optim
 import torchvision.transforms as transforms
+
+from UP3D import UP3D
 
 from config import cfg
 from dataset import DatasetLoader
@@ -311,3 +314,93 @@ class SimpleBaselineTester(Base):
     def _evaluate(self, preds, result_save_path):
         return self.testset.evaluate(preds, result_save_path)
 
+class UP3DTester(Base):
+
+    def __init__(self, cfg, test_epoch, default_data_split="test"):
+        self.coord_out = loss.soft_argmax
+        self.test_epoch = int(test_epoch)
+        self.default_data_split = default_data_split
+        super(UP3DTester, self).__init__(cfg, log_name='test_logs.txt')
+
+    def _make_batch_generator(self):
+        # data load and construct batch generator
+        self.logger.info("Creating dataset...")
+        testset = eval(self.cfg.testset)(self.default_data_split)
+        force_convert = False
+        curr_jn = None  # mpii-joint_name
+        ref_jn = None  # h36m-joint_name
+        ref_sks = None
+        if self.default_data_split == "train":
+            # todo: i.e. this=mpii, target=h36m
+            force_convert = True
+            curr_jn = (
+            'R_Ankle', 'R_Knee', 'R_Hip', 'L_Hip', 'L_Knee', 'L_Ankle', 'Pelvis', 'Thorax', 'Neck', 'Head', 'R_Wrist',
+            'R_Elbow', 'R_Shoulder', 'L_Shoulder', 'L_Elbow', 'L_Wrist')
+            ref_jn = ('Pelvis', 'R_Hip', 'R_Knee', 'R_Ankle', 'L_Hip', 'L_Knee', 'L_Ankle', 'Torso',
+                      'Neck', 'Nose', 'Head',
+                      'L_Shoulder', 'L_Elbow', 'L_Wrist', 'R_Shoulder', 'R_Elbow', 'R_Wrist',)  # 'Thorax')
+
+            ref_skeleton = ((0, 7), (7, 8), (8, 9), (9, 10),
+                            (8, 11), (11, 12), (12, 13),
+                            (8, 14), (14, 15), (15, 16),
+                            (0, 1), (1, 2), (2, 3),
+                            (0, 4), (4, 5), (5, 6))
+            ref_lr_skeleton = (((8, 11), (8, 14)), ((11, 12), (14, 15)), ((12, 13), (15, 16)),
+                               ((0, 1), (0, 4)), ((1, 2), (4, 5)), ((2, 3), (5, 6)))
+            ref_flip_pairs = ((1, 4), (2, 5), (3, 6), (14, 11), (15, 12), (16, 13))
+            ref_sks = (ref_skeleton, ref_lr_skeleton, ref_flip_pairs)
+
+        # testset_loader = DatasetLoader(testset, False,
+        #                                transforms.Compose([
+        #                                    transforms.ToTensor(),
+        #                                    transforms.Normalize(mean=cfg.pixel_mean, std=cfg.pixel_std)]),
+        #                                force_convert=force_convert, curr_jn=curr_jn, ref_jn=ref_jn, ref_sks=ref_sks)
+
+        testset_loader = UP3D(data_label="trainval",
+                                          normalize_dict={
+                                              'pixel_mean': (0.485, 0.456, 0.406),
+                                              'pixel_std': (0.229, 0.224, 0.225),
+                                          },
+                                          const_dict={
+                                              'K_mean': np.array([[1.1473444e+03, 0.0000000e+00, 5.1404352e+02],
+                                                                  [0.0000000e+00, 1.1462365e+03, 5.0670016e+02],
+                                                                  [0.0000000e+00, 0.0000000e+00, 1.0000000e+00]],
+                                                                 dtype=np.float32),
+                                              'K_std': np.array([[2.0789747, 0.0000001, 3.9817653],
+                                                                 [0.0000001, 2.0353518, 5.6948705],
+                                                                 [0.0000001, 0.0000001, 0.0000001]], dtype=np.float32),
+                                              'dist_mean': np.array(
+                                                  [-0.20200874, 0.24049881, -0.00168468, -0.00042439, -0.00191587],
+                                                  dtype=np.float32),
+                                              'dist_std': np.array(
+                                                  [0.00591341, 0.01386873, 0.00071674, 0.00116201, 0.00564366],
+                                                  dtype=np.float32),
+                                          }, img_size=256)
+
+        batch_generator = DataLoader(dataset=testset_loader, batch_size=self.cfg.num_gpus * self.cfg.test_batch_size,
+                                     shuffle=False, num_workers=self.cfg.num_thread, pin_memory=True)
+
+        self.testset = testset
+        self.joint_num = testset_loader.joint_num
+        self.skeleton = testset_loader.skeleton
+        self.flip_pairs = testset.flip_pairs
+        self.tot_sample_num = testset_loader.__len__()
+        self.batch_generator = batch_generator
+
+    def _make_model(self):
+        model_path = os.path.join(self.cfg.model_dir, 'snapshot_%d.pth.tar' % self.test_epoch)
+        assert os.path.exists(model_path), 'Cannot find model at ' + model_path
+        self.logger.info('Load checkpoint from {}'.format(model_path))
+
+        # prepare network
+        self.logger.info("Creating graph...")
+        model = get_pose_net(self.cfg, False, self.joint_num)
+        model = DataParallelModel(model).cuda()
+        ckpt = torch.load(model_path)
+        model.load_state_dict(ckpt['network'])
+        model.eval()
+
+        self.model = model
+
+    def _evaluate(self, preds, result_save_path):
+        return self.testset.evaluate(preds, result_save_path)
